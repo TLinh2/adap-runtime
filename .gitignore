@@ -9,7 +9,7 @@ venv/
 model/
 # onnx/
 # windows/
-# .env
+.env
 deploy.sh
 logs/
 plot/
