@@ -4,10 +4,12 @@ __pycache__/
 # Virtual environment
 venv/
 
-windows/
-.env
 
 data/
 model/
-onnx/
+# onnx/
+# windows/
+# .env
+
 logs/
+plot/
