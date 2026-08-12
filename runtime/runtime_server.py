@@ -1,0 +1,93 @@
+from flask import Flask, request, jsonify
+
+from runtime.monitoring.monitor import Monitoring
+from runtime.scheduler.scheduler_rr import RoundRobinScheduler
+from runtime.worker.worker_interface import WorkerInterface
+from runtime.logging.decision_logger import CSVDecisionLogger
+from runtime.runtime_manager import RuntimeManager
+from runtime.state.cluster_state import ClusterState, NodeState
+from config import SCHEDULER, CPU_THRESHOLD
+from runtime.scheduler.scheduler_manager import create_scheduler
+from runtime.state.scheduler_types import DecisionReason
+
+class RuntimeServer:
+
+    def __init__(self):
+
+        self.app = Flask(__name__)
+
+        workers = {
+            # "alice": NodeState(node_id="163"),
+            # "bob": NodeState(node_id="242"),
+            "sinuhe": NodeState(node_id="50")
+        }
+
+        cluster = ClusterState(list(workers.values()))
+
+        scheduler = create_scheduler(
+            SCHEDULER
+        )
+
+        self.runtime_manager = RuntimeManager(
+            monitoring=Monitoring(cluster),
+            scheduler=scheduler,
+            worker_interface=WorkerInterface(),
+            logger=CSVDecisionLogger(),
+            cluster=cluster
+        )
+
+        self.register_routes()
+
+    def register_routes(self):
+
+        @self.app.route(
+            "/check_admission",
+            methods=["GET"]
+        )
+        def check_admission():
+            host = self.runtime_manager.cluster.host
+
+            # double check
+            if host.cpu_percent >= CPU_THRESHOLD:
+                return jsonify({
+                    "accepted": False,
+                    "admission_reason": DecisionReason.CPU_THRESHOLD
+                }), 200
+
+            return jsonify({
+                "accepted": True,
+                "admission_reason":
+                    DecisionReason.CAPACITY_AVAILABLE
+            }), 200
+
+
+        @self.app.route("/submit_task", methods=["POST"])
+        def submit_task():
+
+            payload = request.json
+
+            result = self.runtime_manager.submit_task(payload)
+
+            return jsonify(result), 202
+
+    def start(self):
+
+        self.runtime_manager.start()
+
+        try:
+
+            self.app.run(
+                host="0.0.0.0",
+                port=9000
+            )
+
+        finally:
+
+            self.runtime_manager.stop()
+
+
+if __name__ == "__main__":
+
+    server = RuntimeServer()
+
+    server.start()
