@@ -27,6 +27,8 @@ class RuntimeManager:
         # FIFO queue chứa task
         self.task_queue = Queue()
 
+        self.state_ready = threading.Event()
+
     def submit_task(self, payload):
 
         self.task_queue.put(payload)
@@ -138,7 +140,11 @@ class RuntimeManager:
     def start(self):
         self.stop_event = threading.Event()
 
+        self.monitoring.collect_cluster_state()
+
+        self.state_ready.set()
         self.monitoring.start()
+
 
         self.scheduler_thread = threading.Thread(
             target=self.scheduler_loop

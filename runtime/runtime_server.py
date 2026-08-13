@@ -17,8 +17,8 @@ class RuntimeServer:
         self.app = Flask(__name__)
 
         workers = {
-            # "alice": NodeState(node_id="163"),
-            # "bob": NodeState(node_id="242"),
+            "alice": NodeState(node_id="163"),
+            "bob": NodeState(node_id="242"),
             "sinuhe": NodeState(node_id="50")
         }
 
