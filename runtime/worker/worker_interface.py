@@ -123,9 +123,7 @@ class WorkerInterface:
                 "worker_id": str(selected_node_id),
                 "admission_status": "ACCEPTED",
                 "queue_size": data["queue_size"],
-                "admission_reason": data.get(
-                    "admission_reason"
-                )
+                "admission_reason": admission["admission_reason"]
             }
 
         except requests.RequestException as e:

@@ -11,5 +11,6 @@ model/
 # windows/
 .env
 deploy.sh
+read_file.py
 logs/
 plot/
