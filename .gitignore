@@ -12,5 +12,7 @@ model/
 .env
 deploy.sh
 read_file.py
+test.py
+.vscode/
 logs/
 plot/
