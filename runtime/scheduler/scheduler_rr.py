@@ -49,7 +49,7 @@ class RoundRobinScheduler(Scheduler):
         return SchedulerOutput(
             selected_node_id=selected_node.node_id,
             offloaded=True,
-            decision_reason=DecisionReason.ROUND_ROBIN
+            decision_reason=DecisionReason.CPU_THRESHOLD
         )
         
         
