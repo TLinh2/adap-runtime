@@ -1,6 +1,7 @@
 import csv
 from pathlib import Path
 from runtime.state.cluster_state import ClusterState
+from datetime import datetime
 
 class DecisionLogEntry:
 
@@ -64,7 +65,14 @@ class CSVDecisionLogger():
                 self,
                 filename="logs/decision/decision_log.csv"
         ):
-                self.filename = filename
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                
+                path = Path(filename)
+
+                self.filename = (
+                        path.parent
+                        / f"{path.stem}_{timestamp}{path.suffix}"
+                )
 
 
         def log(
