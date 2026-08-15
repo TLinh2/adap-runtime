@@ -11,6 +11,7 @@ model/
 # windows/
 .env
 deploy.sh
+stop.sh
 read_file.py
 test.py
 .vscode/
