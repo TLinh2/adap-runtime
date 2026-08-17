@@ -1,6 +1,6 @@
 from resource_logging.resource_service import ResourceLoggerService
 
-logger = ResourceLoggerService(interval_sec=5)
+logger = ResourceLoggerService(interval_sec=1)
 
 logger.start()
 
