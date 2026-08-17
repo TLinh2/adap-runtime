@@ -4,7 +4,6 @@ import onnxruntime as ort
 import time
 import psutil
 
-
 app = Flask(__name__)
 
 
@@ -70,21 +69,6 @@ def infer():
         "latency_ms": latency_ms,
         "success": True
     }), 200
-
-@app.route("/metrics", methods=["GET"])
-def metrics():
-    cpu_percent = psutil.cpu_percent(interval=None)
-
-    ram_percent = psutil.virtual_memory().percent
-
-    temperature = psutil.sensors_temperatures()['cpu_thermal'][0].current
-
-    return jsonify({
-        "node_id": 50,
-        "cpu_percent": cpu_percent,
-        "ram_percent": ram_percent,
-        "temperature": temperature
-    })
 
 
 

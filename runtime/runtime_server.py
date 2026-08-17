@@ -70,6 +70,18 @@ class RuntimeServer:
 
             return jsonify(result), 202
 
+        @self.app.route("/metrics", methods=["GET"])
+        def metrics():
+            host = self.runtime_manager.monitoring.cluster_state.host
+            return jsonify({
+                    "node_id": host.node_id,
+                    "cpu_percent": host.cpu_percent,
+                    "ram_percent": host.ram_percent,
+                    "temperature": host.temperature
+                })
+
+        
+
     def start(self):
 
         self.runtime_manager.start()

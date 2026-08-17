@@ -2,6 +2,8 @@ import threading
 import time
 import requests
 from datetime import datetime
+import psutil
+from flask import jsonify
 
 from runtime.state.cluster_state import ClusterState
 
@@ -17,15 +19,25 @@ class Monitoring:
         self.stop_event = threading.Event()
         self.monitor_thread = None
 
-    # Update cluster state
-    def collect_cluster_state(self):
+    def collect_host_state(self):
+        cpu_percent = psutil.cpu_percent(interval=None)
 
-        for node in self.cluster_state.nodes:
+        ram_percent = psutil.virtual_memory().percent
 
+        temperature = psutil.sensors_temperatures()['cpu_thermal'][0].current
+
+        self.cluster_state.host.update(
+            cpu_percent=cpu_percent,
+            ram_percent=ram_percent,
+            temperature=temperature,
+        )
+    def collect_neighbors_state(self):
+        for node in self.cluster_state.neighbors:
+        
             try:
 
                 metrics = requests.get(
-                    f"http://192.168.1.{node.node_id}:8000/metrics",
+                    f"http://192.168.1.{node.node_id}:9000/metrics",
                     timeout=3
                 ).json()
 
@@ -40,12 +52,18 @@ class Monitoring:
                     f"[Monitoring]: Failed to collect metrics "
                     f"from node {node.node_id}: {e}"
                 )
+
+    # Update cluster state
+    def collect_cluster_state(self):
+        self.collect_host_state()
+        self.collect_neighbors_state()
+        
         self.cluster_state.cluster_snapshot_time = datetime.now()
 
     # Background thread
     def monitoring_loop(self):
         while not self.stop_event.is_set():
-            self .collect_cluster_state()
+            self.collect_cluster_state()
 
             time.sleep(self.interval)
 
@@ -62,4 +80,4 @@ class Monitoring:
 
         if self.monitor_thread is not None:
             self.monitor_thread.join()
-        
+
