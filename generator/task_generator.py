@@ -31,13 +31,13 @@ def load_window_files(folder):
     return files
 
 
-def send_window(filepath, filename):
+def send_window(filepath, filename, task_counter):
 
     data = np.load(filepath)
 
-    window_id = filename.replace(".npy", "")
+    # window_id = filename.replace(".npy", "")
 
-    task_id = f"{SOURCE_NODE_ID}_{window_id}"
+    task_id = f"{SOURCE_NODE_ID}_window{task_counter:08d}"
 
     payload = {
         "task_id": task_id,
@@ -71,6 +71,8 @@ def main():
 
     print(f"Loaded {len(files)} windows")
 
+    task_counter = 0
+
     while True:
 
         for filename in files:
@@ -80,7 +82,9 @@ def main():
                 filename
             )
 
-            send_window(filepath, filename)
+            task_counter += 1
+
+            send_window(filepath, filename, task_counter)
 
             time.sleep(SEND_INTERVAL)
 
