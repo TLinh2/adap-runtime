@@ -37,7 +37,7 @@ def send_window(filepath, filename, task_counter):
 
     # window_id = filename.replace(".npy", "")
 
-    task_id = f"{SOURCE_NODE_ID}_window{task_counter:08d}"
+    task_id = f"{SOURCE_NODE_ID}_window_{task_counter:08d}"
 
     payload = {
         "task_id": task_id,
