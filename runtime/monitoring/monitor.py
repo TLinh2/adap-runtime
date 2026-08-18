@@ -10,10 +10,10 @@ from runtime.state.cluster_state import ClusterState
 class Monitoring:
     def __init__(
             self,
-            cluster: ClusterState,
+            cluster_state: ClusterState,
             interval: int = 5,
     ):
-        self.cluster_state = cluster
+        self.cluster_state = cluster_state
         self.interval = interval
 
         self.stop_event = threading.Event()

@@ -22,14 +22,14 @@ class RuntimeServer:
             "sinuhe": NodeState(node_id="50")
         }
 
-        cluster = ClusterState(list(workers.values()))
+        cluster_state = ClusterState(list(workers.values()))
 
         scheduler = create_scheduler(
             SCHEDULER
         )
 
         self.runtime_manager = RuntimeManager(
-            monitoring=Monitoring(cluster),
+            monitoring=Monitoring(cluster_state),
             scheduler=scheduler,
             worker_interface=WorkerInterface(),
             logger=CSVDecisionLogger(),
@@ -44,7 +44,7 @@ class RuntimeServer:
             methods=["GET"]
         )
         def check_admission():
-            host = self.runtime_manager.monitoring.cluster.host
+            host = self.runtime_manager.monitoring.cluster_state.host
 
             # second check
             if host.cpu_percent >= CPU_THRESHOLD:
