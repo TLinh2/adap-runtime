@@ -28,10 +28,10 @@ class ClusterState:
             if node.node_id != host_node_id
         ]
 
-    def get_available_nodes(self):
+    def get_available_neighbors(self):
         return [
             node
-            for node in self.nodes
+            for node in self.neighbors
             if node.is_available
         ]
 

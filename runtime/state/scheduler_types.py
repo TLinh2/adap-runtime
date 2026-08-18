@@ -1,4 +1,4 @@
-from runtime.state.cluster_state import ClusterState
+from runtime.state.cluster_state import ClusterState,NodeState
 
 class DecisionReason:
     LOCAL_HEALTHY = "LOCAL_HEALTHY"
@@ -21,21 +21,23 @@ class SchedulerInput:
     def __init__(
             self,
             request_id: int,
-            cluster_state: ClusterState,
+            host: NodeState,
+            candidates: list[NodeState]
     ):
         self.request_id = request_id
-        self.cluster_state = cluster_state
+        self.host = host
+        self.candidates = candidates
 
 
 class SchedulerOutput:
 
     def __init__(
             self,
-            selected_node_id: str,
+            selected_node: NodeState,
             offloaded: bool,
             decision_reason: str
     ):
-        self.selected_node_id = selected_node_id
+        self.selected_node = selected_node
         self.offloaded = offloaded
         self.decision_reason = decision_reason
 

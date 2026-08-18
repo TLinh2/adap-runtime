@@ -33,7 +33,6 @@ class RuntimeServer:
             scheduler=scheduler,
             worker_interface=WorkerInterface(),
             logger=CSVDecisionLogger(),
-            cluster=cluster
         )
 
         self.register_routes()

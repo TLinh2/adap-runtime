@@ -2,7 +2,7 @@ from datetime import datetime
 from queue import Queue
 import threading
 from queue import Empty
-from runtime.state.scheduler_types import SchedulerInput
+from runtime.state.scheduler_types import DecisionReason, SchedulerInput, SchedulerOutput
 from runtime.logging.decision_logger import DecisionLogEntry
 from config import HOST_ID
 
@@ -14,15 +14,12 @@ class RuntimeManager:
             scheduler,
             worker_interface,
             logger,
-            cluster
     ):
         self.monitoring = monitoring
         self.scheduler = scheduler
         self.worker_interface = worker_interface
         self.logger = logger
 
-        # Cluster object (Alice, Bob, Sinuhe...)
-        self.cluster = cluster
 
         # FIFO queue chứa task
         self.task_queue = Queue()
@@ -58,19 +55,29 @@ class RuntimeManager:
             task_id = task["task_id"]
             source_node_id = task["source_node_id"]
 
-            # Đọc cluster state mới nhất và available
+            # Đọc cluster state mới nhất
             cluster_state = self.monitoring.cluster_state
-            cluster_state.nodes = cluster_state.get_available_nodes()
 
-            # Chạy thuật toán scheduler
-            scheduler_input = SchedulerInput(
-                request_id=task_id,
-                cluster_state=cluster_state
-            )
+            if not cluster_state.neighbors:
+                scheduler_output = SchedulerOutput(
+                    selected_node_id=cluster_state.host,
+                    offloaded=False,
+                    decision_reason=DecisionReason.NO_NODES_AROUND
+                )
+            else:
+                # Filter available nodes
+                candidates = cluster_state.get_available_neighbors()
 
-            scheduler_output = self.scheduler.schedule(
-                scheduler_input
-            )
+                # Chạy thuật toán scheduler
+                scheduler_input = SchedulerInput(
+                    request_id=task_id,
+                    host=cluster_state.host,
+                    candidates=candidates
+                )
+
+                scheduler_output = self.scheduler.schedule(
+                    scheduler_input
+                )
 
 
 
@@ -81,16 +88,17 @@ class RuntimeManager:
                 task["source_node_id"] = HOST_ID
                 
                 response = self.worker_interface.forward_request(
-                    selected_node_id=scheduler_output.selected_node_id,
+                    selected_node_id=scheduler_output.selected_node.node_id,
                     payload=task
                 )
 
-                if not response["accepted"] or not response["is_available"]:
-
+                if not response["is_available"]:
+                    scheduler_output.selected_node.is_available = False
                     print(
                         f"[RuntimeManager] "
-                        f"Node {scheduler_output.selected_node_id} "
-                        f"rejected task {task_id} or it is not available"
+                        f"Node {scheduler_output.selected_node.node_id} "
+                        f"is currently not available"
+                        f"Set node {scheduler_output.selected_node.node_id} is_available = False"
                     )
                     # =============
                     # FALLBACK
@@ -101,7 +109,7 @@ class RuntimeManager:
                     
             else:
                 response = self.worker_interface.infer_local(
-                    selected_node_id=scheduler_output.selected_node_id,
+                    selected_node_id=scheduler_output.selected_node.node_id,
                     payload=task
                 )
 

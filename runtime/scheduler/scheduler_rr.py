@@ -16,38 +16,37 @@ class RoundRobinScheduler(Scheduler):
             scheduler_input: SchedulerInput,
     ) -> SchedulerOutput:
         
-        cluster = scheduler_input.cluster_state
-        host = cluster.host
-        neighbors = cluster.neighbors
+        host = scheduler_input.host
+        candidates = scheduler_input.candidates
 
         # Case 1: Local
         if host.cpu_percent < CPU_THRESHOLD:
             return SchedulerOutput(
-                selected_node_id=host.node_id,
+                selected_node=host,
                 offloaded=False,
                 decision_reason=DecisionReason.LOCAL_HEALTHY
             )
         
         # Case 2: No neighbors
-        if not neighbors:
+        if not candidates:
 
             return SchedulerOutput(
-                selected_node_id=host.node_id,
+                selected_node=host,
                 offloaded=False,
-                decision_reason=DecisionReason.NO_NODES_AROUND
+                decision_reason=DecisionReason.ALL_NODES_BUSY
             )
 
         # Case 3: ROUND ROBIN
-        selected_node = neighbors [
-            self.current_index % len(neighbors)
+        selected_node = candidates [
+            self.current_index % len(candidates)
         ]
 
         self.current_index = (
             self.current_index + 1
-        ) % len(neighbors)
+        ) % len(candidates)
 
         return SchedulerOutput(
-            selected_node_id=selected_node.node_id,
+            selected_node=selected_node,
             offloaded=True,
             decision_reason=DecisionReason.CPU_THRESHOLD
         )
