@@ -1,98 +1,198 @@
 import os
 import time
+import threading
 import requests
 import numpy as np
-from config import HOST_ID
 
-# ==========================
-# CONFIG
-# ==========================
+from config import HOST_ID
 
 MASTER_URL = "http://127.0.0.1:9000/submit_task"
 
-SOURCE_NODE_ID = HOST_ID
-
 WINDOW_FOLDER = "./windows"
-
-SEND_INTERVAL = 0.1      # 100 ms
-
-LOOP_FOREVER = True
 
 TIMEOUT = 30
 
-# ==========================
 
+class TaskGenerator:
 
-def load_window_files(folder):
-    files = sorted(
-        f for f in os.listdir(folder)
-        if f.endswith(".npy")
-    )
-    return files
+    def __init__(self):
 
+        self.running = False
 
-def send_window(filepath, filename, task_counter):
+        self.rate = 1.0
 
-    data = np.load(filepath)
+        self.send_interval = 1.0
 
-    # window_id = filename.replace(".npy", "")
+        self.task_counter = 0
 
-    task_id = f"{SOURCE_NODE_ID}_window_{task_counter:08d}"
+        self.total_sent = 0
 
-    payload = {
-        "task_id": task_id,
-        "window": data.tolist(),
-        "source_node_id": SOURCE_NODE_ID
-    }
+        self.thread = None
 
-    try:
-        response = requests.post(
-            MASTER_URL,
-            json=payload,
-            timeout=TIMEOUT
+        self.stop_event = threading.Event()
+
+        self.window_files = self.load_window_files(
+            WINDOW_FOLDER
         )
 
-        response.raise_for_status()
+    # =====================================
+    # Utils
+    # =====================================
 
-        return response.json()
+    def load_window_files(self, folder):
 
-    except requests.RequestException as e:
+        files = sorted(
+            f for f in os.listdir(folder)
+            if f.endswith(".npy")
+        )
+
+        if not files:
+            raise ValueError(
+                f"No .npy files found in {folder}"
+            )
+
+        return files
+
+    def set_rate(self, rate):
+
+        if rate <= 0:
+            raise ValueError(
+                "rate must be > 0"
+            )
+
+        self.rate = rate
+
+        self.send_interval = 1.0 / rate
+
+    # =====================================
+    # Send task
+    # =====================================
+
+    def send_window(
+            self,
+            filepath,
+            filename
+    ):
+
+        data = np.load(filepath)
+
+        self.task_counter += 1
+
+        task_id = (
+            f"{HOST_ID}_window_"
+            f"{self.task_counter:08d}"
+        )
+
+        payload = {
+            "task_id": task_id,
+            "window": data.tolist(),
+            "source_node_id": HOST_ID
+        }
+
+        try:
+
+            response = requests.post(
+                MASTER_URL,
+                json=payload,
+                timeout=TIMEOUT
+            )
+
+            response.raise_for_status()
+
+            self.total_sent += 1
+
+            return response.json()
+
+        except requests.RequestException as e:
+
+            print(
+                f"[TaskGenerator] "
+                f"Failed to send {task_id}: {e}"
+            )
+
+            return None
+
+    # =====================================
+    # Generator Loop
+    # =====================================
+
+    def generator_loop(self):
+
         print(
-            f"[TaskGenerator] Failed to send "
-            f"{task_id}: {e}"
+            f"[TaskGenerator] Started "
+            f"(rate={self.rate} req/s)"
         )
 
-        return None
+        file_index = 0
 
+        while not self.stop_event.is_set():
 
-def main():
-
-    files = load_window_files(WINDOW_FOLDER)
-
-    print(f"Loaded {len(files)} windows")
-
-    task_counter = 0
-
-    while True:
-
-        for filename in files:
+            filename = self.window_files[
+                file_index
+            ]
 
             filepath = os.path.join(
                 WINDOW_FOLDER,
                 filename
             )
 
-            task_counter += 1
+            self.send_window(
+                filepath,
+                filename
+            )
 
-            send_window(filepath, filename, task_counter)
+            file_index = (
+                file_index + 1
+            ) % len(self.window_files)
 
-            time.sleep(SEND_INTERVAL)
+            time.sleep(
+                self.send_interval
+            )
 
-        if not LOOP_FOREVER:
-            break
+        print(
+            "[TaskGenerator] Stopped"
+        )
 
-    print("Generator finished.")
+    # =====================================
+    # Lifecycle
+    # =====================================
 
+    def start(self):
 
-if __name__ == "__main__":
-    main()
+        if self.running:
+            return
+
+        self.running = True
+
+        self.stop_event.clear()
+
+        self.thread = threading.Thread(
+            target=self.generator_loop,
+            daemon=True
+        )
+
+        self.thread.start()
+
+    def stop(self):
+
+        if not self.running:
+            return
+
+        self.running = False
+
+        self.stop_event.set()
+
+        self.thread.join()
+
+    # =====================================
+    # Status
+    # =====================================
+
+    def get_status(self):
+
+        return {
+            "running": self.running,
+            "rate": self.rate,
+            "total_sent": self.total_sent,
+            "task_counter": self.task_counter
+        }
