@@ -16,7 +16,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DECISION_LOG_DIR = PROJECT_ROOT / "logs" / "decision"
 RESOURCE_LOG_DIR = PROJECT_ROOT / "logs" / "resource"
 
-OUTPUT_DIR = PROJECT_ROOT / "analyze"
+OUTPUT_DIR = PROJECT_ROOT / "analyze" / "18-08"
 PLOT_DIR = OUTPUT_DIR / "plots"
 CSV_DIR = OUTPUT_DIR / "csv"
 
