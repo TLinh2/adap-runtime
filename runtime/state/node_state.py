@@ -14,7 +14,8 @@ class NodeState:
         self.temperature = None
         self.latency_ms = None
         
-    def update(self, cpu_percent, ram_percent, temperature, latency_ms=None):
+    def update(self, is_available=True, cpu_percent=None, ram_percent=None, temperature=None, latency_ms=None):
+        self.is_available = is_available
         self.cpu_percent = cpu_percent
         self.ram_percent = ram_percent
         self.temperature = temperature

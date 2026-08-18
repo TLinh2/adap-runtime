@@ -58,8 +58,9 @@ class RuntimeManager:
             task_id = task["task_id"]
             source_node_id = task["source_node_id"]
 
-            # Đọc cluster state mới nhất
+            # Đọc cluster state mới nhất và available
             cluster_state = self.monitoring.cluster_state
+            cluster_state.nodes = cluster_state.get_available_nodes()
 
             # Chạy thuật toán scheduler
             scheduler_input = SchedulerInput(
@@ -84,12 +85,12 @@ class RuntimeManager:
                     payload=task
                 )
 
-                if not response["accepted"]:
+                if not response["accepted"] or not response["is_available"]:
 
                     print(
                         f"[RuntimeManager] "
                         f"Node {scheduler_output.selected_node_id} "
-                        f"rejected task {task_id}"
+                        f"rejected task {task_id} or it is not available"
                     )
                     # =============
                     # FALLBACK
@@ -124,6 +125,7 @@ class RuntimeManager:
                 scheduler_name=self.scheduler.name,
 
                 selected_node_id=scheduler_output.selected_node_id,
+                is_available=response["is_available"],
                 offloaded=scheduler_output.offloaded,
                 decision_reason=scheduler_output.decision_reason,
 

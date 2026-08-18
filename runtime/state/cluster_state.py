@@ -28,6 +28,13 @@ class ClusterState:
             if node.node_id != host_node_id
         ]
 
+    def get_available_nodes(self):
+        return [
+            node
+            for node in self.nodes
+            if node.is_available
+        ]
+
     def add_node(self, node_state: NodeState):
         self.nodes.append(node_state)
 

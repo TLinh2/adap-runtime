@@ -42,6 +42,7 @@ class Monitoring:
                 ).json()
 
                 node.update(
+                    is_available=metrics["is_available"],
                     cpu_percent=metrics["cpu_percent"],
                     ram_percent=metrics["ram_percent"],
                     temperature=metrics["temperature"],

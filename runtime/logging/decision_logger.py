@@ -12,6 +12,7 @@ class DecisionLogEntry:
                 source_node_id: str,
                 scheduler_name: str,
                 selected_node_id: str,
+                is_available: bool,
                 offloaded: bool,
                 decision_reason: str,
                 admission_status: str,
@@ -23,6 +24,7 @@ class DecisionLogEntry:
                 self.source_node_id = source_node_id
                 self.scheduler_name = scheduler_name                                                                
                 self.selected_node_id = selected_node_id
+                self.is_available = is_available
                 self.offloaded = offloaded
                 self.decision_reason = decision_reason
                 self.admission_status = admission_status
@@ -41,6 +43,8 @@ class DecisionLogEntry:
                       "scheduler_name": self.scheduler_name,
 
                       "selected_node_id": self.selected_node_id,
+
+                      "is_available": self.is_available,
 
                       "offloaded": self.offloaded,
 

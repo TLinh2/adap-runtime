@@ -24,6 +24,7 @@ class WorkerInterface:
     
                 return {
                     "accepted": True,
+                    "is_available": True,
                     "worker_id": str(selected_node_id),
                     "admission_status": "NOT_APPLICABLE",
                     "admission_reason": "NOT_APPLICABLE",
@@ -66,6 +67,7 @@ class WorkerInterface:
 
             return {
                 "accepted": data["accepted"],
+                "is_available": data["is_available"],
                 "worker_id": str(selected_node_id),
                 "admission_reason": data["admission_reason"]
             }
@@ -78,6 +80,7 @@ class WorkerInterface:
 
             return {
                 "accepted" : False,
+                "is_available": False,
                 "worker_id": str(selected_node_id),
                 "admission_reason": "NODE_UNREACHABLE"
             }
@@ -98,6 +101,7 @@ class WorkerInterface:
 
             return {
                 "accepted": False,
+                "is_available": admission["is_available"],
                 "worker_id": str(selected_node_id),
                 "admission_status": "REJECTED",
                 "admission_reason": admission["admission_reason"]
@@ -120,6 +124,7 @@ class WorkerInterface:
 
             return {
                 "accepted": True,
+                "is_available": admission["is_available"],
                 "worker_id": str(selected_node_id),
                 "admission_status": "ACCEPTED",
                 "queue_size": data["queue_size"],
@@ -134,6 +139,7 @@ class WorkerInterface:
 
             return {
                 "accepted": False,
+                "is_available": False,
                 "worker_id": str(selected_node_id),
                 "admission_status": "FAILED",
                 "admission_reason": "FORWARD_FAILED"

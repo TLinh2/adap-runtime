@@ -49,15 +49,18 @@ class RuntimeServer:
 
             # double check
             if host.cpu_percent >= CPU_THRESHOLD:
+                host.is_available = False
                 return jsonify({
                     "accepted": False,
-                    "admission_reason": DecisionReason.CPU_THRESHOLD
+                    "admission_reason": DecisionReason.CPU_THRESHOLD,
+                    "is_available": False
                 }), 200
 
             return jsonify({
                 "accepted": True,
                 "admission_reason":
-                    DecisionReason.CAPACITY_AVAILABLE
+                    DecisionReason.CAPACITY_AVAILABLE,
+                "is_available": True
             }), 200
 
 
@@ -73,8 +76,13 @@ class RuntimeServer:
         @self.app.route("/metrics", methods=["GET"])
         def metrics():
             host = self.runtime_manager.monitoring.cluster_state.host
+            if host.cpu_percent < CPU_THRESHOLD:
+                host.is_available = True
+            else:
+                host.is_available = False
             return jsonify({
                     "node_id": host.node_id,
+                    "is_available": host.is_available,
                     "cpu_percent": host.cpu_percent,
                     "ram_percent": host.ram_percent,
                     "temperature": host.temperature
