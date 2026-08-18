@@ -44,9 +44,9 @@ class RuntimeServer:
             methods=["GET"]
         )
         def check_admission():
-            host = self.runtime_manager.cluster.host
+            host = self.runtime_manager.monitoring.cluster.host
 
-            # double check
+            # second check
             if host.cpu_percent >= CPU_THRESHOLD:
                 host.is_available = False
                 return jsonify({
