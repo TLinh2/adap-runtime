@@ -58,37 +58,31 @@ class RuntimeManager:
             # Đọc cluster state mới nhất
             cluster_state = self.monitoring.cluster_state
 
-            if not cluster_state.neighbors:
-                scheduler_output = SchedulerOutput(
-                    selected_node_id=cluster_state.host,
-                    offloaded=False,
-                    decision_reason=DecisionReason.NO_NODES_AROUND
-                )
-            else:
-                # Filter available nodes
-                candidates = cluster_state.get_available_neighbors()
+            # Filter available nodes
+            candidates = cluster_state.get_available_neighbors()
 
-                # Chạy thuật toán scheduler
-                scheduler_input = SchedulerInput(
-                    request_id=task_id,
-                    host=cluster_state.host,
-                    candidates=candidates
-                )
+            # Chạy thuật toán scheduler
+            scheduler_input = SchedulerInput(
+                request_id=task_id,
+                host=cluster_state.host,
+                candidates=candidates
+            )
 
-                scheduler_output = self.scheduler.schedule(
-                    scheduler_input
-                )
-
+            scheduler_output = self.scheduler.schedule(
+                scheduler_input
+            )
 
 
             # ==============================================================
             #  Kiểm tra có offload hay không? Send message cho worker_interface
             # ==============================================================
+            selected_node_id = scheduler_output.selected_node.node_id
+
             if scheduler_output.offloaded:
                 task["source_node_id"] = HOST_ID
                 
                 response = self.worker_interface.forward_request(
-                    selected_node_id=scheduler_output.selected_node.node_id,
+                    selected_node_id=selected_node_id,
                     payload=task
                 )
 
@@ -96,9 +90,9 @@ class RuntimeManager:
                     scheduler_output.selected_node.is_available = False
                     print(
                         f"[RuntimeManager] "
-                        f"Node {scheduler_output.selected_node.node_id} "
+                        f"Node {selected_node_id} "
                         f"is currently not available"
-                        f"Set node {scheduler_output.selected_node.node_id} is_available = False"
+                        f"Set node {selected_node_id} is_available = False"
                     )
                     # =============
                     # FALLBACK
@@ -109,15 +103,8 @@ class RuntimeManager:
                     
             else:
                 response = self.worker_interface.infer_local(
-                    selected_node_id=scheduler_output.selected_node.node_id,
+                    selected_node_id=selected_node_id,
                     payload=task
-                )
-
-            if scheduler_output.selected_node_id != response["worker_id"]:
-                raise ValueError(
-                    f"Worker ID mismatch: "
-                    f"expected {scheduler_output.selected_node_id}, "
-                    f"got {response['worker_id']}"
                 )
 
 
@@ -132,7 +119,7 @@ class RuntimeManager:
                 source_node_id=source_node_id,
                 scheduler_name=self.scheduler.name,
 
-                selected_node_id=scheduler_output.selected_node_id,
+                selected_node_id=selected_node_id,
                 is_available=response["is_available"],
                 offloaded=scheduler_output.offloaded,
                 decision_reason=scheduler_output.decision_reason,

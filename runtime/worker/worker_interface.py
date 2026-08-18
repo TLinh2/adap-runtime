@@ -39,6 +39,7 @@ class WorkerInterface:
             return {
                 "accepted": False,
                 "worker_id": None,
+                "is_available": False,
                 "admission_status": "NOT_APPLICABLE",
                 "admission_reason": "NOT_APPLICABLE",
                 "predictions": None,
