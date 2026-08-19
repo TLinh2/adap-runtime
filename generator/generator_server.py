@@ -2,7 +2,9 @@ from flask import Flask
 from flask import jsonify
 from flask import request
 
-from generator.task_generator import TaskGenerator
+from generator.task_generator import (
+    TaskGenerator
+)
 
 
 class GeneratorServer:
@@ -27,19 +29,23 @@ class GeneratorServer:
         )
         def start_generator():
 
-            data = request.json
+            payload = request.json
 
-            rate = float(
-                data.get("rate", 1)
+            rate = payload["rate"]
+
+            execute_at = payload[
+                "execute_at"
+            ]
+
+            self.generator.schedule_start(
+                rate=rate,
+                execute_at=execute_at
             )
 
-            self.generator.set_rate(rate)
-
-            self.generator.start()
-
             return jsonify({
-                "status": "started",
-                "rate": rate
+                "status": "scheduled",
+                "rate": rate,
+                "execute_at": execute_at
             })
 
         @self.app.route(
@@ -60,17 +66,23 @@ class GeneratorServer:
         )
         def set_rate():
 
-            data = request.json
+            payload = request.json
 
-            rate = float(
-                data["rate"]
+            rate = payload["rate"]
+
+            execute_at = payload[
+                "execute_at"
+            ]
+
+            self.generator.schedule_rate_update(
+                rate=rate,
+                execute_at=execute_at
             )
 
-            self.generator.set_rate(rate)
-
             return jsonify({
-                "status": "updated",
-                "rate": rate
+                "status": "scheduled",
+                "rate": rate,
+                "execute_at": execute_at
             })
 
         @self.app.route(

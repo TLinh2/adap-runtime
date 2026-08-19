@@ -64,8 +64,67 @@ class TaskGenerator:
 
         self.send_interval = 1.0 / rate
 
+        print(
+            f"[TaskGenerator] "
+            f"Rate updated to "
+            f"{rate} window/s"
+        )
+
     # =====================================
-    # Send task
+    # Scheduled Commands
+    # =====================================
+
+    def schedule_start(
+            self,
+            rate,
+            execute_at
+    ):
+
+        def worker():
+
+            delay = (
+                execute_at
+                - time.time()
+            )
+
+            if delay > 0:
+                time.sleep(delay)
+
+            self.set_rate(rate)
+
+            if not self.running:
+                self.start()
+
+        threading.Thread(
+            target=worker,
+            daemon=True
+        ).start()
+
+    def schedule_rate_update(
+            self,
+            rate,
+            execute_at
+    ):
+
+        def worker():
+
+            delay = (
+                execute_at
+                - time.time()
+            )
+
+            if delay > 0:
+                time.sleep(delay)
+
+            self.set_rate(rate)
+
+        threading.Thread(
+            target=worker,
+            daemon=True
+        ).start()
+
+    # =====================================
+    # Send Task
     # =====================================
 
     def send_window(
@@ -107,7 +166,8 @@ class TaskGenerator:
 
             print(
                 f"[TaskGenerator] "
-                f"Failed to send {task_id}: {e}"
+                f"Failed to send "
+                f"{task_id}: {e}"
             )
 
             return None
@@ -120,7 +180,7 @@ class TaskGenerator:
 
         print(
             f"[TaskGenerator] Started "
-            f"(rate={self.rate} req/s)"
+            f"(rate={self.rate} window/s)"
         )
 
         file_index = 0
@@ -182,7 +242,8 @@ class TaskGenerator:
 
         self.stop_event.set()
 
-        self.thread.join()
+        if self.thread is not None:
+            self.thread.join()
 
     # =====================================
     # Status
@@ -193,6 +254,7 @@ class TaskGenerator:
         return {
             "running": self.running,
             "rate": self.rate,
+            "send_interval": self.send_interval,
             "total_sent": self.total_sent,
             "task_counter": self.task_counter
         }
