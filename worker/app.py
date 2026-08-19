@@ -3,9 +3,10 @@ import numpy as np
 import onnxruntime as ort
 import time
 import psutil
+from worker.execution_logger import CSVExecutionLogger, ExecutionLogEntry
 
 app = Flask(__name__)
-
+logger = CSVExecutionLogger()
 
 
 # -------------
@@ -26,8 +27,10 @@ print("Model loaded.")
 
 @app.route("/infer", methods=["POST"])
 def infer():
+    arrival_time = time.time()
 
     data = request.get_json()
+
 
     if not data:
         return jsonify({"error": "No JSON"}), 400
@@ -49,24 +52,37 @@ def infer():
     print(f"Input shape: {window.shape}")
     print("Running inference...")
 
-    start_time = time.perf_counter()
+
+    infer_start_time = time.time()
 
     outputs = session.run(
         None,
         {input_name: window}
     )
 
-    end_time = time.perf_counter()
-    latency_ms = (end_time - start_time) * 1000
+    infer_end_time = time.time()
 
     predictions = np.argmax(outputs[0], axis=1)
 
     print("Inference completed.")
 
+
+    t_wait = infer_start_time - data["created_at"]
+    t_infer = infer_end_time - infer_start_time
+    t_total = infer_end_time - data["created_at"]
+
+    log_entry = ExecutionLogEntry(
+        data["task_id"],
+        t_wait,
+        t_infer,
+        t_total
+    )
+    logger.log(log_entry)
+
+
     return jsonify({
         "status": "success",
         "predictions": predictions.tolist(),
-        "latency_ms": latency_ms,
         "success": True
     }), 200
 

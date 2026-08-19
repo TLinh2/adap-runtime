@@ -11,26 +11,24 @@ class WorkerInterface:
         url = f"http://127.0.0.1:8000/infer"
 
         try:
-        
-                response = requests.post(
-                    url,
-                    json=payload,
-                    timeout=30
-                )
-    
-                response.raise_for_status()
-    
-                data = response.json()
-    
-                return {
-                    "accepted": True,
-                    "is_available": True,
-                    "worker_id": str(selected_node_id),
-                    "admission_status": "NOT_APPLICABLE",
-                    "admission_reason": "NOT_APPLICABLE",
-                    "predictions": data["predictions"],
-                    "latency_ms": data["latency_ms"]
-                }
+            response = requests.post(
+                url,
+                json=payload,
+                timeout=30
+            )
+
+            response.raise_for_status()
+
+            data = response.json()
+
+            return {
+                "accepted": True,
+                "is_available": True,
+                "worker_id": str(selected_node_id),
+                "admission_status": "NOT_APPLICABLE",
+                "admission_reason": "NOT_APPLICABLE",
+                "predictions": data["predictions"],
+            }
     
         except requests.RequestException as e:
 

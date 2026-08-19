@@ -144,6 +144,7 @@ class TaskGenerator:
 
         payload = {
             "task_id": task_id,
+            "created_at": time.time(),
             "window": data.tolist(),
             "source_node_id": HOST_ID
         }

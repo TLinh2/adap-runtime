@@ -13,12 +13,12 @@ class RuntimeManager:
             monitoring,
             scheduler,
             worker_interface,
-            logger,
+            decision_logger,
     ):
         self.monitoring = monitoring
         self.scheduler = scheduler
         self.worker_interface = worker_interface
-        self.logger = logger
+        self.decision_logger = decision_logger
 
 
         # FIFO queue chứa task
@@ -108,7 +108,6 @@ class RuntimeManager:
                 )
 
 
-
             # ===========================
             # Lưu log
             # ===========================
@@ -130,7 +129,7 @@ class RuntimeManager:
                 cluster_state=cluster_state
             )
 
-            self.logger.log(log_entry)
+            self.decision_logger.log(log_entry)
 
             self.task_queue.task_done()
             

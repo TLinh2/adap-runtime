@@ -32,7 +32,7 @@ class RuntimeServer:
             monitoring=Monitoring(cluster_state),
             scheduler=scheduler,
             worker_interface=WorkerInterface(),
-            logger=CSVDecisionLogger(),
+            decision_logger=CSVDecisionLogger(),
         )
 
         self.register_routes()
