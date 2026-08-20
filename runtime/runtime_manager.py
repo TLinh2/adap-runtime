@@ -113,7 +113,7 @@ class RuntimeManager:
             # ===========================
 
             log_entry = DecisionLogEntry(
-                timestamp=datetime.now(),
+                timestamp=task["created_at"], # Sử dụng thời điểm task_generator first active
                 request_id=task_id,
                 source_node_id=source_node_id,
                 scheduler_name=self.scheduler.name,
