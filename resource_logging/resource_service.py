@@ -20,6 +20,12 @@ class ResourceLoggerService:
             else CSVResourceLogger()
         )
 
+        self.running = False
+
+        self. stop_event = threading.Event()
+
+        self.thread = None
+
     def log_loop(self):
         while not self.stop_event.is_set():
 
@@ -44,7 +50,15 @@ class ResourceLoggerService:
             time.sleep(self.interval_sec)
 
     def start(self):
-        self.stop_event = threading.Event()
+
+        if self.running:
+            return
+
+        self.running = True
+
+        self.stop_event.clear()
+
+        self.logger = CSVResourceLogger()
 
         self.thread = threading.Thread(
             target=self.log_loop,
@@ -53,7 +67,54 @@ class ResourceLoggerService:
 
         self.thread.start()
 
+        print("[ResourceLogger] Started")
+
     def stop(self):
+        if not self.running:
+            return
+        self.running = False
         self.stop_event.set()
 
         self.thread.join()
+
+        print("[ResourceLogger] Stopped")
+
+    def schedule_start(
+        self,
+        execute_at
+    ):
+        delay = execute_at - time.time()
+
+        if delay < 0:
+            delay = 0
+
+        threading.Timer(
+            delay,
+            self.start
+        ).start()
+
+        print(
+            f"[ResourceLogger] "
+            f"Scheduled start at "
+            f"{execute_at}"
+        )
+
+    def schedule_stop(
+        self,
+        execute_at
+    ):
+        delay = execute_at - time.time()
+
+        if delay < 0:
+            delay = 0
+
+        threading.Timer(
+            delay,
+            self.stop
+        ).start()
+
+        print(
+            f"[ResourceLogger] "
+            f"Scheduled stop at "
+            f"{execute_at}"
+        )
