@@ -47,7 +47,14 @@ class CSVExecutionLogger:
         self,
         filename="logs/execution/execution_log.csv"
     ):
-        self.filename = filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        
+        path = Path(filename)
+
+        self.filename = (
+                path.parent
+                / f"{path.stem}_{timestamp}{path.suffix}"
+        )
 
         Path(
             self.filename
