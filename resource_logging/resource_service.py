@@ -9,7 +9,7 @@ class ResourceLoggerService:
 
     def __init__(
         self,
-        interval_sec: 1,
+        interval_sec: float,
         logger=None
     ):
         self.interval_sec = interval_sec
