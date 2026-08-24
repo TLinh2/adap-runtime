@@ -1,7 +1,7 @@
 from flask import Flask
 from flask import jsonify
 from flask import request
-
+from config import RESOURCE_INTERVAL
 from resource_logging.resource_service import ResourceLoggerService
 
 class ResourceServer:
@@ -9,7 +9,7 @@ class ResourceServer:
     def __init__(self):
         self.app = Flask(__name__)
 
-        self.logger_service = ResourceLoggerService(0.5)
+        self.logger_service = ResourceLoggerService(RESOURCE_INTERVAL)
 
         self.register_routes()
 
