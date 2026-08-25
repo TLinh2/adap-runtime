@@ -1,7 +1,7 @@
 from runtime.scheduler.scheduler_base import Scheduler
 from runtime.state.scheduler_types import SchedulerInput, SchedulerOutput, Schedulers, DecisionReason
 from runtime.state.node_state import NodeState
-from config import CPU_THRESHOLD
+from runtime.state.resource_state import ResourceState
 
 class RoundRobinScheduler(Scheduler):
 
@@ -20,7 +20,7 @@ class RoundRobinScheduler(Scheduler):
         candidates = scheduler_input.candidates
 
         # Case 1: Local
-        if host.cpu_percent < CPU_THRESHOLD:
+        if host.overall_state == ResourceState.HEALTHY:
             return SchedulerOutput(
                 selected_node=host,
                 offloaded=False,
@@ -48,7 +48,7 @@ class RoundRobinScheduler(Scheduler):
         return SchedulerOutput(
             selected_node=selected_node,
             offloaded=True,
-            decision_reason=DecisionReason.CPU_THRESHOLD
+            decision_reason=DecisionReason.ROUND_ROBIN
         )
         
         

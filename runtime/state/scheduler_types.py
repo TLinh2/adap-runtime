@@ -1,15 +1,16 @@
-from runtime.state.cluster_state import ClusterState,NodeState
+from runtime.state.cluster_state import ClusterState, NodeState
 
 class DecisionReason:
     LOCAL_HEALTHY = "LOCAL_HEALTHY"
     ROUND_ROBIN = "ROUND_ROBIN"
-    CPU_THRESHOLD = "CPU_THRESHOLD"
-    RAM_THRESHOLD = "RAM_THRESHOLD"
-    TEMPERATURE_THRESHOLD = "TEMPERATURE_THRESHOLD"
-    LATENCY_THRESHOLD = "LATENCY_THRESHOLD"
     ALL_NODES_BUSY = "ALL_NODES_BUSY"
     NO_NODES_AROUND = "NO_NODES_AROUND"
+    LOWEST_PRESSURE = "LOWEST_PRESSURE"
+
+class AdmissionReason: 
     CAPACITY_AVAILABLE = "CAPACITY_AVAILABLE"
+    NODE_CRITICAL = "NODE_CRITICAL"
+    NODE_WARNING = "NODE_WARNING"
 
 class Schedulers:
     ROUND_ROBIN = "ROUND_ROBIN"

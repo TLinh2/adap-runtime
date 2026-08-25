@@ -6,9 +6,10 @@ from runtime.worker.worker_interface import WorkerInterface
 from runtime.logging.decision_logger import CSVDecisionLogger
 from runtime.runtime_manager import RuntimeManager
 from runtime.state.cluster_state import ClusterState, NodeState
-from config import SCHEDULER, CPU_THRESHOLD
+from runtime.state.resource_state import ResourceState
+from config import SCHEDULER
 from runtime.scheduler.scheduler_manager import create_scheduler
-from runtime.state.scheduler_types import DecisionReason
+from runtime.state.scheduler_types import DecisionReason, AdmissionReason
 
 class RuntimeServer:
 
@@ -47,19 +48,27 @@ class RuntimeServer:
             host = self.runtime_manager.monitoring.cluster_state.host
 
             # second check
-            if host.cpu_percent >= CPU_THRESHOLD:
-                host.is_available = False
+            if host.overall_state == ResourceState.CRITICAL:
                 return jsonify({
-                    "accepted": False,
-                    "admission_reason": DecisionReason.CPU_THRESHOLD,
-                    "is_available": False
-                }), 200
+                "accepted": False,
+                "admission_reason": AdmissionReason.NODE_CRITICAL,
+                "is_available": False,
+                "overall_state": host.overall_state,
+            }), 200
+
+            if host.overall_state == ResourceState.WARNING:
+                return jsonify({
+                "accepted": False,
+                "admission_reason": AdmissionReason.NODE_WARNING,
+                "is_available": False,
+                "overall_state": host.overall_state,
+            }), 200
 
             return jsonify({
                 "accepted": True,
-                "admission_reason":
-                    DecisionReason.CAPACITY_AVAILABLE,
-                "is_available": True
+                "admission_reason": AdmissionReason.CAPACITY_AVAILABLE,
+                "is_available": True,
+                "overall_state": host.overall_state,
             }), 200
 
 
@@ -75,7 +84,7 @@ class RuntimeServer:
         @self.app.route("/metrics", methods=["GET"])
         def metrics():
             host = self.runtime_manager.monitoring.cluster_state.host
-            if host.cpu_percent < CPU_THRESHOLD:
+            if host.overall_state == ResourceState.HEALTHY:
                 host.is_available = True
             else:
                 host.is_available = False
@@ -84,7 +93,11 @@ class RuntimeServer:
                     "is_available": host.is_available,
                     "cpu_percent": host.cpu_percent,
                     "ram_percent": host.ram_percent,
-                    "temperature": host.temperature
+                    "temperature": host.temperature,
+                    "cpu_state": host.cpu_state,
+                    "ram_state": host.ram_state,
+                    "temperature_state": host.temperature_state,
+                    "overall_state": host.overall_state,
                 })
 
         

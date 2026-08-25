@@ -1,37 +1,49 @@
 from runtime.scheduler.scheduler_base import Scheduler
 from runtime.state.scheduler_types import SchedulerInput, SchedulerOutput, Schedulers, DecisionReason
-
+from runtime.state.resource_state import ResourceState
 class ReactiveThresholdScheduler(Scheduler):
     def __init__(self):
         self.name = Schedulers.REACTIVE
         super().__init__()
 
+    def calculate_pressure(node):
+        cpu_pressure = node.cpu_percent / 90
+
+        ram_pressure = node.ram_percent / 90
+
+        temp_pressure = node.temperature / 75
+
+        return (cpu_pressure + ram_pressure + temp_pressure) / 3
+
     def schedule(
             self,
             scheduler_input: SchedulerInput
     ) -> SchedulerOutput:
-        candidates = self.filter_nodes(
-            scheduler_input.cluster_state.nodes
-        )
+        host = scheduler_input.host
+        candidates = scheduler_input.candidates
 
-        best_node = self.select_best_node(
-            candidates
-        )
+        # Case 1: Local
+        if host.overall_state == ResourceState.HEALTHY:
+            return SchedulerOutput(
+                selected_node=host,
+                offloaded=False,
+                decision_reason=DecisionReason.LOCAL_HEALTHY
+            )
+        
+        # Case 2: No neighbors
+        if not candidates:
+            return SchedulerOutput(
+                selected_node=host,
+                offloaded=False,
+                decision_reason=DecisionReason.ALL_NODES_BUSY
+            )
+
+        # Case 3: REACTIVE
+        selected_node = min(candidates, key=self.calculate_pressure)
 
         return SchedulerOutput(
-            selected_node_id=best_node.node_id,
-            decision="reactive_threshold"
+            selected_node=selected_node,
+            offloaded=True,
+            decision_reason=DecisionReason.LOWEST_PRESSURE
         )
-
-class ThresholdConfig:
-
-    def __init__(
-            self,
-            max_cpu_percent=80,
-            max_ram_percent=90,
-            max_temperature=70,
-    ):
-        self.max_cpu_percent = max_cpu_percent
-        self.max_ram_percent = max_ram_percent
-        self.max_temperature = max_temperature
         

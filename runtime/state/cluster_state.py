@@ -1,4 +1,5 @@
 from runtime.state.node_state import NodeState
+from runtime.state.resource_state import ResourceState
 from config import HOST_ID
 
 class ClusterState:
@@ -29,11 +30,7 @@ class ClusterState:
         ]
 
     def get_available_neighbors(self):
-        return [
-            node
-            for node in self.neighbors
-            if node.is_available
-        ]
+        return [node for node in self.neighbors if (node.is_available and node.overall_state == ResourceState.HEALTHY)]
 
     def add_node(self, node_state: NodeState):
         self.nodes.append(node_state)
