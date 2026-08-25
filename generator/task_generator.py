@@ -6,7 +6,8 @@ import numpy as np
 
 from config import HOST_ID
 
-MASTER_URL = "http://127.0.0.1:9000/submit_task"
+RUNTIME_URL = "http://127.0.0.1:9000/submit_task"
+WORKER_URL = "http://127.0.0.1:8000/infer"
 
 WINDOW_FOLDER = "./windows"
 
@@ -18,6 +19,8 @@ class TaskGenerator:
     def __init__(self):
 
         self.running = False
+
+        self.mode = "RUNTIME"
 
         self.rate = 1.0
 
@@ -34,6 +37,20 @@ class TaskGenerator:
         self.window_files = self.load_window_files(
             WINDOW_FOLDER
         )
+
+    def set_mode(self, mode):
+
+        mode = mode.upper()
+
+        if mode not in {
+            "RUNTIME",
+            "BASELINE"
+        }:
+            raise ValueError(
+                f"Unknown experiment mode: {mode}"
+            )
+
+        self.mode = mode
 
     # =====================================
     # Utils
@@ -77,7 +94,8 @@ class TaskGenerator:
     def schedule_start(
             self,
             rate,
-            execute_at
+            execute_at,
+            mode="RUNTIME"
     ):
 
         def worker():
@@ -89,6 +107,8 @@ class TaskGenerator:
 
             if delay > 0:
                 time.sleep(delay)
+
+            self.set_mode(mode)
 
             self.set_rate(rate)
 
@@ -149,10 +169,22 @@ class TaskGenerator:
             "source_node_id": HOST_ID
         }
 
+        if self.mode == "BASELINE":
+
+            url = (
+                "http://127.0.0.1:8000/infer"
+            )
+
+        else:
+
+            url = (
+                "http://127.0.0.1:9000/submit_task"
+            )
+
         try:
 
             response = requests.post(
-                MASTER_URL,
+                url,
                 json=payload,
                 timeout=TIMEOUT
             )

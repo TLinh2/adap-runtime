@@ -37,15 +37,19 @@ class GeneratorServer:
                 "execute_at"
             ]
 
+            mode = payload["mode"]
+
             self.generator.schedule_start(
                 rate=rate,
-                execute_at=execute_at
+                execute_at=execute_at,
+                mode=mode
             )
 
             return jsonify({
                 "status": "scheduled",
                 "rate": rate,
-                "execute_at": execute_at
+                "execute_at": execute_at,
+                "mode": mode
             })
 
         @self.app.route(
