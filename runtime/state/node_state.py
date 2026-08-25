@@ -43,16 +43,13 @@ class NodeState:
         self.ram_state = ResourceState.HEALTHY
         self.temperature_state = ResourceState.HEALTHY
         self.overall_state = ResourceState.HEALTHY
-        
-    def update(self, 
+
+    def update(
+            self, 
             is_available=True, 
             cpu_percent=None, 
             ram_percent=None, 
             temperature=None, 
-            cpu_state=None,
-            ram_state=None,
-            temperature_state=None,
-            overall_state=None, 
             latency_ms=None
         ):
 
@@ -60,12 +57,9 @@ class NodeState:
             self.cpu_percent = cpu_percent
             self.ram_percent = ram_percent
             self.temperature = temperature
-            self.cpu_state = cpu_state
-            self.ram_state = ram_state
-            self.temperature_state = temperature_state
-            self.overall_state = overall_state
             self.latency_ms = latency_ms
 
+    @staticmethod
     def update_resource_state(
             value,
             previous_state,
@@ -75,46 +69,26 @@ class NodeState:
             critical_exit
         ):
     
-            # ----------------------------------------
-            # Previous: HEALTHY
-            # ----------------------------------------
-    
             if previous_state == ResourceState.HEALTHY:
-    
                 if value >= critical_enter:
                     return ResourceState.CRITICAL
-    
                 if value >= warning_enter:
                     return ResourceState.WARNING
-    
                 return ResourceState.HEALTHY
     
-            # ----------------------------------------
-            # Previous: WARNING
-            # ----------------------------------------
-    
             if previous_state == ResourceState.WARNING:
-    
                 if value >= critical_enter:
                     return ResourceState.CRITICAL
-    
                 if value < warning_exit:
                     return ResourceState.HEALTHY
-    
                 return ResourceState.WARNING
-    
-            # ----------------------------------------
-            # Previous: CRITICAL
-            # ----------------------------------------
-    
+
+
             if previous_state == ResourceState.CRITICAL:
-    
                 if value < warning_exit:
                     return ResourceState.HEALTHY
-    
                 if value < critical_exit:
                     return ResourceState.WARNING
-    
                 return ResourceState.CRITICAL
     
             return ResourceState.HEALTHY

@@ -48,11 +48,6 @@ class Monitoring:
                     cpu_percent=metrics["cpu_percent"],
                     ram_percent=metrics["ram_percent"],
                     temperature=metrics["temperature"],
-
-                    cpu_state=metrics["cpu_state"],
-                    ram_state=metrics["ram_state"],
-                    temperature_state=metrics["temperature_state"],
-                    overall_state=metrics["overall_state"]
                 )
 
                 node.update_health_state()

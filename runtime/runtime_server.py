@@ -94,10 +94,6 @@ class RuntimeServer:
                     "cpu_percent": host.cpu_percent,
                     "ram_percent": host.ram_percent,
                     "temperature": host.temperature,
-                    "cpu_state": host.cpu_state,
-                    "ram_state": host.ram_state,
-                    "temperature_state": host.temperature_state,
-                    "overall_state": host.overall_state,
                 })
 
         
