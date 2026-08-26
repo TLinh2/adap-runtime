@@ -191,11 +191,11 @@ def submit_local():
 def status():
 
     return jsonify({
-        "status":
-            "running",
-
         "queue_size":
-            task_queue.qsize()
+            task_queue.qsize(),
+
+        "unfinished_tasks":
+            task_queue.unfinished_tasks
     }), 200
 
 
