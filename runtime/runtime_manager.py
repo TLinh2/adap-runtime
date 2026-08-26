@@ -53,7 +53,7 @@ class RuntimeManager:
                 continue
 
             try:
-                self._proccess_task(task)
+                self._process_task(task)
 
             except Exception as e:
                 print(
