@@ -17,6 +17,7 @@ class DecisionLogEntry:
                 decision_reason: str,
                 admission_status: str,
                 admission_reason: str,
+                local_state: str,
                 cluster_state: ClusterState,
         ):
                 self.timestamp = timestamp
@@ -29,6 +30,7 @@ class DecisionLogEntry:
                 self.decision_reason = decision_reason
                 self.admission_status = admission_status
                 self.admission_reason = admission_reason
+                self.local_state = local_state
                 self.cluster_state = cluster_state
 
         def to_dict(self):
@@ -53,6 +55,8 @@ class DecisionLogEntry:
                       "admission_status": self.admission_status,
 
                       "admission_reason": self.admission_reason,
+
+                      "local_state": self.local_state,
 
                       "cluster_snapshot_time": self.cluster_state.cluster_snapshot_time
                }

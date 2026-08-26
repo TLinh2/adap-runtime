@@ -31,7 +31,7 @@ class RoundRobinScheduler(Scheduler):
         if not candidates:
 
             return SchedulerOutput(
-                selected_node=host,
+                selected_node=None,
                 offloaded=False,
                 decision_reason=DecisionReason.ALL_NODES_BUSY
             )

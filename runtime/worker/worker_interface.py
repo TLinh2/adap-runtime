@@ -3,7 +3,7 @@ import requests
 
 class WorkerInterface:
 
-    def infer_local(
+    def submit_local(
             self,
             selected_node_id: str,
             payload: dict
