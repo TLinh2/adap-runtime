@@ -84,10 +84,7 @@ class RuntimeServer:
         @self.app.route("/metrics", methods=["GET"])
         def metrics():
             host = self.runtime_manager.monitoring.cluster_state.host
-            if host.overall_state == ResourceState.HEALTHY:
-                host.is_available = True
-            else:
-                host.is_available = False
+
             return jsonify({
                     "node_id": host.node_id,
                     "is_available": host.is_available,

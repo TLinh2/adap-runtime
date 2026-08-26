@@ -6,6 +6,7 @@ import psutil
 from flask import jsonify
 
 from runtime.state.cluster_state import ClusterState
+from runtime.state.resource_state import ResourceState
 
 class Monitoring:
     def __init__(
@@ -26,13 +27,19 @@ class Monitoring:
 
         temperature = psutil.sensors_temperatures()['cpu_thermal'][0].current
 
-        self.cluster_state.host.update(
+        host = self.cluster_state.host
+        host.update(
             cpu_percent=cpu_percent,
             ram_percent=ram_percent,
             temperature=temperature,
         )
 
-        self.cluster_state.host.update_health_state()
+        host.update_health_state()
+
+        if host.overall_state == ResourceState.HEALTHY:
+            host.is_available = True
+        else:
+            host.is_available = False
     def collect_neighbors_state(self):
         for node in self.cluster_state.neighbors:
         
