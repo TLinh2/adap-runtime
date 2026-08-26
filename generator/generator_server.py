@@ -65,6 +65,23 @@ class GeneratorServer:
             })
 
         @self.app.route(
+            "/generator/schedule_stop",
+            methods=["POST"]
+        )
+        def stop_generator():
+            payload = request.json
+
+            execute_at = payload["execute_at"]
+
+            self.generator.schedule_stop(execute_at=execute_at)
+
+            return jsonify({
+                "status": "stopped",
+                "execute_at": execute_at
+            })
+        
+
+        @self.app.route(
             "/generator/set_rate",
             methods=["POST"]
         )
