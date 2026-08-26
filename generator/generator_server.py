@@ -68,7 +68,7 @@ class GeneratorServer:
             "/generator/schedule_stop",
             methods=["POST"]
         )
-        def stop_generator():
+        def schedule_stop():
             payload = request.json
 
             execute_at = payload["execute_at"]
