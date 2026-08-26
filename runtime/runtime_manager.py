@@ -26,16 +26,6 @@ class RuntimeManager:
 
         self.state_ready = threading.Event()
 
-    def get_status(self):
-
-        return {
-            "queue_size":
-                self.task_queue.qsize(),
-
-            "unfinished_tasks":
-                self.task_queue.unfinished_tasks
-        }
-
     def submit_task(self, payload):
 
         self.task_queue.put(payload)

@@ -39,15 +39,6 @@ class RuntimeServer:
         self.register_routes()
 
     def register_routes(self):
-        @self.app.route(
-            "/status",
-            methods=["GET"]
-        )
-        def status():
-
-            return jsonify(
-                self.runtime_manager.get_status()
-            ), 200
 
         @self.app.route(
             "/check_admission",
