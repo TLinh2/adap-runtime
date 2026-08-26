@@ -8,7 +8,7 @@ class WorkerInterface:
             selected_node_id: str,
             payload: dict
     ):
-        url = f"http://127.0.0.1:8000/infer"
+        url = f"http://127.0.0.1:8000/submit_local"
 
         try:
             response = requests.post(
@@ -27,7 +27,6 @@ class WorkerInterface:
                 "worker_id": str(selected_node_id),
                 "admission_status": "NOT_APPLICABLE",
                 "admission_reason": "NOT_APPLICABLE",
-                "predictions": data["predictions"],
             }
     
         except requests.RequestException as e:
@@ -41,7 +40,6 @@ class WorkerInterface:
                 "admission_status": "NOT_APPLICABLE",
                 "admission_reason": "NOT_APPLICABLE",
                 "predictions": None,
-                "latency_ms": None
             }
 
     def check_admission(
