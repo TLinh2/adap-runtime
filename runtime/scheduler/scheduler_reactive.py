@@ -6,7 +6,7 @@ class ReactiveThresholdScheduler(Scheduler):
         self.name = Schedulers.REACTIVE
         super().__init__()
 
-    def calculate_pressure(node):
+    def calculate_pressure(self, node):
         cpu_pressure = node.cpu_percent / 90
 
         ram_pressure = node.ram_percent / 90
