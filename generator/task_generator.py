@@ -6,8 +6,8 @@ import numpy as np
 
 from config import HOST_ID
 
-RUNTIME_URL = "http://127.0.0.1:9000/submit_local"
-WORKER_URL = "http://127.0.0.1:8000/infer"
+RUNTIME_URL = "http://127.0.0.1:9000/submit_task"
+WORKER_URL = "http://127.0.0.1:8000/submit_local"
 
 WINDOW_FOLDER = "./windows"
 
