@@ -171,15 +171,11 @@ class TaskGenerator:
 
         if self.mode == "BASELINE":
 
-            url = (
-                "http://127.0.0.1:8000/infer"
-            )
+            url = WORKER_URL
 
         else:
 
-            url = (
-                "http://127.0.0.1:9000/submit_task"
-            )
+            url = RUNTIME_URL
 
         try:
 
