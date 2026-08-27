@@ -91,6 +91,7 @@ class RuntimeServer:
                     "cpu_percent": host.cpu_percent,
                     "ram_percent": host.ram_percent,
                     "temperature": host.temperature,
+                    "queue_size": host.queue_size,
                 })
 
         

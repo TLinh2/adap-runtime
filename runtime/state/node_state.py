@@ -44,13 +44,16 @@ class NodeState:
         self.temperature_state = ResourceState.HEALTHY
         self.overall_state = ResourceState.HEALTHY
 
+        self.queue_size = None
+
     def update(
             self, 
             is_available=True, 
             cpu_percent=None, 
             ram_percent=None, 
             temperature=None, 
-            latency_ms=None
+            latency_ms=None,
+            queue_size=None,
         ):
 
             self.is_available = is_available
@@ -58,6 +61,7 @@ class NodeState:
             self.ram_percent = ram_percent
             self.temperature = temperature
             self.latency_ms = latency_ms
+            self.queue_size = queue_size
 
     @staticmethod
     def update_resource_state(

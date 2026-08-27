@@ -21,17 +21,22 @@ class Monitoring:
         self.monitor_thread = None
 
     def collect_host_state(self):
-        cpu_percent = psutil.cpu_percent(interval=None)
-
-        ram_percent = psutil.virtual_memory().percent
-
-        temperature = psutil.sensors_temperatures()['cpu_thermal'][0].current
-
         host = self.cluster_state.host
+
+        cpu_percent = psutil.cpu_percent(interval=None)
+        ram_percent = psutil.virtual_memory().percent
+        temperature = psutil.sensors_temperatures()['cpu_thermal'][0].current
+        queue_data = requests.get(
+            f"http://192.168.1.{host.node_id}:8000/status",
+            timeout=3
+        ).json()
+        queue_size = queue_data["queue_size"]
+
         host.update(
             cpu_percent=cpu_percent,
             ram_percent=ram_percent,
             temperature=temperature,
+            queue_size=queue_size
         )
 
         host.update_health_state()
@@ -55,6 +60,7 @@ class Monitoring:
                     cpu_percent=metrics["cpu_percent"],
                     ram_percent=metrics["ram_percent"],
                     temperature=metrics["temperature"],
+                    queue_size=metrics["queue_size"]
                 )
 
                 node.update_health_state()
