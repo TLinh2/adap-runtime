@@ -20,7 +20,7 @@ class RoundRobinScheduler(Scheduler):
         candidates = scheduler_input.candidates
 
         # Case 1: Local
-        if host.overall_state == ResourceState.HEALTHY:
+        if host.overall_state == ResourceState.HEALTHY or host.overall_state == ResourceState.WARNING:
             return SchedulerOutput(
                 selected_node=host,
                 offloaded=False,
