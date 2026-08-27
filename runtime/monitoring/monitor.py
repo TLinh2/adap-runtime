@@ -12,7 +12,7 @@ class Monitoring:
     def __init__(
             self,
             cluster_state: ClusterState,
-            interval: int = 5,
+            interval: int = 1,
     ):
         self.cluster_state = cluster_state
         self.interval = interval
