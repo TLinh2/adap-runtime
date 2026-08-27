@@ -10,6 +10,7 @@ class DecisionLogEntry:
                 timestamp,
                 request_id: int,
                 source_node_id: str,
+                queue_size: int,
                 scheduler_name: str,
                 selected_node_id: str,
                 is_available: bool,
@@ -23,6 +24,7 @@ class DecisionLogEntry:
                 self.timestamp = timestamp
                 self.request_id = request_id
                 self.source_node_id = source_node_id
+                self.queue_size = queue_size
                 self.scheduler_name = scheduler_name                                                                
                 self.selected_node_id = selected_node_id
                 self.is_available = is_available
@@ -41,6 +43,8 @@ class DecisionLogEntry:
                       "request_id": self.request_id,
 
                       "source_node_id": self.source_node_id,
+
+                      "queue_size": self.queue_size,
 
                       "scheduler_name": self.scheduler_name,
 

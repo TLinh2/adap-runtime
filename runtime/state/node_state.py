@@ -98,6 +98,11 @@ class NodeState:
             return ResourceState.HEALTHY
 
     def update_health_state(self):
+        self.cpu_state = self.update_resource_state(
+            value=self.cpu_percent,
+            previous_state=self.cpu_state,
+            **CPU_THRESHOLDS
+        )
 
         self.ram_state = self.update_resource_state(
             value=self.ram_percent,
