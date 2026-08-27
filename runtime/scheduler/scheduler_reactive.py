@@ -24,7 +24,7 @@ class ReactiveThresholdScheduler(Scheduler):
 
         should_offload = (
             host.cpu_state == ResourceState.CRITICAL
-            and host.queue_size >= 10
+            and (host.queue_size + host.unfinished_tasks) >= 10
         )
 
         # Case 1: Local

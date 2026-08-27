@@ -45,6 +45,7 @@ class NodeState:
         self.overall_state = ResourceState.HEALTHY
 
         self.queue_size = None
+        self.unfinished_tasks = None
 
     def update(
             self, 
@@ -54,6 +55,7 @@ class NodeState:
             temperature=None, 
             latency_ms=None,
             queue_size=None,
+            unfinished_tasks=None,
         ):
 
             self.is_available = is_available
@@ -62,6 +64,7 @@ class NodeState:
             self.temperature = temperature
             self.latency_ms = latency_ms
             self.queue_size = queue_size
+            self.unfinished_tasks = unfinished_tasks
 
     @staticmethod
     def update_resource_state(

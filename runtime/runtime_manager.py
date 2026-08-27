@@ -101,7 +101,10 @@ class RuntimeManager:
             timestamp=datetime.now(),
             request_id=task_id,
             source_node_id=source_node_id,
+
             queue_size=host.queue_size,
+            unfinished_tasks=host.unfinished_tasks,
+            
             scheduler_name=self.scheduler.name,
 
             selected_node_id=execution_result["selected_node_id"],

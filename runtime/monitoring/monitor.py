@@ -31,12 +31,14 @@ class Monitoring:
             timeout=3
         ).json()
         queue_size = queue_data["queue_size"]
+        unfinished_tasks = queue_data["unfinished_tasks"]
 
         host.update(
             cpu_percent=cpu_percent,
             ram_percent=ram_percent,
             temperature=temperature,
-            queue_size=queue_size
+            queue_size=queue_size,
+            unfinished_tasks=unfinished_tasks
         )
 
         host.update_health_state()
@@ -60,7 +62,8 @@ class Monitoring:
                     cpu_percent=metrics["cpu_percent"],
                     ram_percent=metrics["ram_percent"],
                     temperature=metrics["temperature"],
-                    queue_size=metrics["queue_size"]
+                    queue_size=metrics["queue_size"],
+                    unfinished_tasks=metrics["unfinished_tasks"]
                 )
 
                 node.update_health_state()
