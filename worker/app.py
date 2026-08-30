@@ -226,12 +226,12 @@ def socket_listener():
                 f"queue_size={queue_size}"
             )
 
-            except Exception as e:
+        except Exception as e:
 
-                print(
-                    "[Worker] "
-                    f"Socket receive failed: {e}"
-                )
+            print(
+                "[Worker] "
+                f"Socket receive failed: {e}"
+            )
 
 
 # MAIN
