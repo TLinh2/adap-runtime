@@ -84,13 +84,13 @@ def execute_inference(data):
 
     logger.log(log_entry)
 
-    print(
-        f"[Worker] Completed "
-        f"{data['task_id']} | "
-        f"wait={t_wait:.4f}s | "
-        f"infer={t_infer:.4f}s | "
-        f"total={t_total:.4f}s"
-    )
+    # print(
+    #     f"[Worker] Completed "
+    #     f"{data['task_id']} | "
+    #     f"wait={t_wait:.4f}s | "
+    #     f"infer={t_infer:.4f}s | "
+    #     f"total={t_total:.4f}s"
+    # )
 
     return predictions
 
@@ -161,12 +161,6 @@ def submit_local():
             }), 400
 
     queue_size = enqueue_task(data)
-
-    print(
-        f"[Worker] Accepted "
-        f"{data['task_id']} | "
-        f"queue_size={queue_size}"
-    )
 
     # IMPORTANT:
     # Return immediately after enqueue.

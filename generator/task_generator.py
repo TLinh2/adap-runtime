@@ -220,7 +220,6 @@ class TaskGenerator:
                 protocol=pickle.HIGHEST_PROTOCOL
             )
 
-            print(len(message))
             self.socket.sendto(message, socket_path)
 
             self.total_sent += 1
