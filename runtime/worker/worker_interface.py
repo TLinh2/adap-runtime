@@ -16,7 +16,7 @@ class WorkerInterface:
 
         try:
             
-            message = pickle.dumps(payload, protocol=pcikle.HIGHEST_PROTOCOL)
+            message = pickle.dumps(payload, protocol=pickle.HIGHEST_PROTOCOL)
 
             self.local_socket.sendto(message, WORKER_SOCKET_PATH)
 
