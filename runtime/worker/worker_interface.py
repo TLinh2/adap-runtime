@@ -1,25 +1,24 @@
 import requests
+import socket
+import pickle
 
+WORKER_SOCKET_PATH = "/tmp/adap_worker.sock"
 
 class WorkerInterface:
+    def __init__(self):
+        self.local_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
 
     def submit_local(
             self,
             selected_node_id: str,
             payload: dict
     ):
-        url = f"http://127.0.0.1:8000/submit_local"
 
         try:
-            response = requests.post(
-                url,
-                json=payload,
-                timeout=30
-            )
+            
+            message = pickle.dumps(payload, protocol=pcikle.HIGHEST_PROTOCOL)
 
-            response.raise_for_status()
-
-            data = response.json()
+            self.local_socket.sendto(message, WORKER_SOCKET_PATH)
 
             return {
                 "accepted": True,
@@ -29,7 +28,7 @@ class WorkerInterface:
                 "admission_reason": "NOT_APPLICABLE",
             }
     
-        except requests.RequestException as e:
+        except OSError as e:
 
             print(f"[WorkerInterface] Local inference failed: {e}")
 
@@ -39,7 +38,6 @@ class WorkerInterface:
                 "is_available": False,
                 "admission_status": "NOT_APPLICABLE",
                 "admission_reason": "NOT_APPLICABLE",
-                "predictions": None,
             }
 
     def check_admission(

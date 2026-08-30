@@ -1,4 +1,6 @@
 from flask import Flask, request, jsonify
+import pickle
+import socket
 
 import threading
 import time
@@ -20,6 +22,7 @@ logger = CSVExecutionLogger()
 task_queue = Queue()
 
 MODEL_PATH = "./onnx/bearing_cnn.onnx"
+WORKER_SOCKET_PATH = "/tmp/adap_worker.sock"
 
 print("[Worker] Loading model...")
 
@@ -121,6 +124,10 @@ def inference_loop():
 
             task_queue.task_done()
 
+def enqueue_task(data):
+    task_queue.put(data)
+    return task_queue.qsize()
+
 @app.route(
     "/submit_local",
     methods=["POST"]
@@ -152,13 +159,7 @@ def submit_local():
                     f"Missing {field}"
             }), 400
 
-    task_queue.put(
-        data
-    )
-
-    queue_size = (
-        task_queue.qsize()
-    )
+    queue_size = enqueue_task(data)
 
     print(
         f"[Worker] Accepted "
@@ -198,6 +199,40 @@ def status():
             task_queue.unfinished_tasks
     }), 200
 
+def socket_listener():
+    if os.path.exists(WORKER_SOCKET_PATH):
+        os.remove(WORKER_SOCKET_PATH)
+
+    worker_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+    worker_socket.bind(WORKER_SOCKET_PATH)
+
+    print(
+        f"[Worker] "
+        f"Listening on "
+        f"{WORKER_SOCKET_PATH}"
+    )
+
+    while True:
+        try:
+            message = worker_socket.recv(65535)
+
+            data = pickle.loads(message)
+
+            queue_size = enqueue_task(data)
+
+            print(
+                f"[Worker] Accepted "
+                f"{data['task_id']} | "
+                f"queue_size={queue_size}"
+            )
+
+            except Exception as e:
+
+                print(
+                    "[Worker] "
+                    f"Socket receive failed: {e}"
+                )
+
 
 # MAIN
 
@@ -209,6 +244,12 @@ if __name__ == "__main__":
     )
 
     inference_thread.start()
+    socket_thread = threading.Thread(
+        target=socket_listener,
+        daemon=True
+    )
+
+    socket_thread.start()
 
     app.run(
         host="0.0.0.0",

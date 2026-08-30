@@ -1,4 +1,8 @@
 from flask import Flask, request, jsonify
+import os
+import socket
+import pickle
+import threading
 
 from runtime.monitoring.monitor import Monitoring
 from runtime.scheduler.scheduler_rr import RoundRobinScheduler
@@ -11,11 +15,19 @@ from config import SCHEDULER
 from runtime.scheduler.scheduler_manager import create_scheduler
 from runtime.state.scheduler_types import DecisionReason, AdmissionReason
 
+RUNTIME_SOCKET_PATH = "/tmp/adap_runtime.sock"
+
 class RuntimeServer:
 
     def __init__(self):
 
         self.app = Flask(__name__)
+
+        # Socket 
+        self.socket_stop_event = threading.Event()
+        self.runtime_socket = None
+        self.socket_thread = None
+
 
         workers = {
             "alice": NodeState(node_id="163"),
@@ -95,11 +107,62 @@ class RuntimeServer:
                     "unfinished_tasks": host.unfinished_tasks,
                 })
 
-        
+    def socket_listener(self):
+        if os.path.exists(RUNTIME_SOCKET_PATH):
+            os.remove(RUNTIME_SOCKET_PATH)
+        self.runtime_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        self.runtime_socket.bind(RUNTIME_SOCKET_PATH)
+
+        self.runtime_socket.settimeout(1.0)
+
+        print(
+            f"[RuntimeServer] "
+            f"Listening on "
+            f"{RUNTIME_SOCKET_PATH}"
+        )
+
+        while not self.socket_stop_event.is_set():
+            try:
+
+                message = self.runtime_socket.recv(65535)
+            
+            except socket.timeout:
+                continue
+
+            except OSError:
+                break
+
+            try:
+                payload = pickle.loads(message)
+
+                self.runtime_manager.submit_task(payload)
+            except Exception as e:
+                print(f"[RuntimeServer] Failed to received task: {e}")
+
+    def start_socket_listener(self):
+        self.socket_stop_event.clear()
+
+        self.socket_thread = threading.Thread(
+            target=self.socket_listener,
+            daemon=True
+        )
+        self.socket_thread.start()
+
+    def stop_socket_listener(self):
+        self.socket_stop_event.set()
+        if self.runtime_socket is not None:
+            self.runtime_socket.close()
+
+        if self.socket_thread is not None:
+            self.socket_thread.join()
+
+        if os.path.exists(RUNTIME_SOCKET_PATH):
+            os.remove(RUNTIME_SOCKET_PATH)
 
     def start(self):
 
         self.runtime_manager.start()
+        self.start_socket_listener()
 
         try:
 
@@ -109,8 +172,9 @@ class RuntimeServer:
             )
 
         finally:
-
+            self.stop_socket_listener()
             self.runtime_manager.stop()
+
 
 
 if __name__ == "__main__":

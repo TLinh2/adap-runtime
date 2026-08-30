@@ -1,17 +1,22 @@
 import os
 import time
 import threading
-import requests
+import socket
+import pickle
 import numpy as np
 
 from config import HOST_ID
 
-RUNTIME_URL = "http://127.0.0.1:9000/submit_task"
-WORKER_URL = "http://127.0.0.1:8000/submit_local"
+# RUNTIME_URL = "http://127.0.0.1:9000/submit_task"
+# WORKER_URL = "http://127.0.0.1:8000/submit_local"
+# TIMEOUT = 30
+
+RUNTIME_SOCKET = "/tmp/adap_runtime.sock"
+WORKER_SOCKET = "/tmp/adap_worker.sock"
+
 
 WINDOW_FOLDER = "./windows"
 
-TIMEOUT = 30
 
 
 class TaskGenerator:
@@ -33,10 +38,23 @@ class TaskGenerator:
         self.thread = None
 
         self.stop_event = threading.Event()
+        self.socket = socket.socket(
+            socket.AF_UNIX,
+            socket.SOCK_DGRAM
+        )
 
         self.window_files = self.load_window_files(
             WINDOW_FOLDER
         )
+        self.windows = [
+            np.load(
+                os.path.join(
+                    WINDOW_FOLDER,
+                    filename
+                )
+            ).tolist()
+            for filename in self.window_files
+        ]
 
     def set_mode(self, mode):
 
@@ -169,11 +187,8 @@ class TaskGenerator:
 
     def send_window(
             self,
-            filepath,
-            filename
+            window
     ):
-
-        data = np.load(filepath)
 
         self.task_counter += 1
 
@@ -185,33 +200,34 @@ class TaskGenerator:
         payload = {
             "task_id": task_id,
             "created_at": time.time(),
-            "window": data.tolist(),
+            "window": window,
             "source_node_id": HOST_ID
         }
 
         if self.mode == "BASELINE":
 
-            url = WORKER_URL
+            socket_path = WORKER_SOCKET
 
         else:
 
-            url = RUNTIME_URL
+            socket_path = RUNTIME_SOCKET
 
         try:
 
-            response = requests.post(
-                url,
-                json=payload,
-                timeout=TIMEOUT
+            
+            message = pickle.dumps(
+                payload,
+                protocol=pickle.HIGHEST_PROTOCOL
             )
 
-            response.raise_for_status()
+            print(len(message))
+            self.socket.sendto(message, socket_path)
 
             self.total_sent += 1
 
-            return response.json()
+            return True
 
-        except requests.RequestException as e:
+        except OSError as e:
 
             print(
                 f"[TaskGenerator] "
@@ -219,7 +235,7 @@ class TaskGenerator:
                 f"{task_id}: {e}"
             )
 
-            return None
+            return False
 
     # =====================================
     # Generator Loop
@@ -236,23 +252,17 @@ class TaskGenerator:
 
         while not self.stop_event.is_set():
 
-            filename = self.window_files[
+            window = self.windows[
                 file_index
             ]
 
-            filepath = os.path.join(
-                WINDOW_FOLDER,
-                filename
-            )
-
             self.send_window(
-                filepath,
-                filename
+                window
             )
 
             file_index = (
                 file_index + 1
-            ) % len(self.window_files)
+            ) % len(self.windows)
 
             time.sleep(
                 self.send_interval
