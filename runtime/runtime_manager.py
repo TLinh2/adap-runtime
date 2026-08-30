@@ -103,7 +103,7 @@ class RuntimeManager:
             source_node_id=source_node_id,
 
             queue_size=host.queue_size,
-            unfinished_tasks=host.unfinished_tasks,
+            # unfinished_tasks=host.unfinished_tasks,
             
             scheduler_name=self.scheduler.name,
 
