@@ -215,12 +215,6 @@ def socket_listener():
 
             queue_size = enqueue_task(data)
 
-            print(
-                f"[Worker] Accepted "
-                f"{data['task_id']} | "
-                f"queue_size={queue_size}"
-            )
-
         except Exception as e:
 
             print(
