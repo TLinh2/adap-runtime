@@ -107,6 +107,13 @@ class RuntimeServer:
                     "unfinished_tasks": host.unfinished_tasks,
                 })
 
+        @self.app.route("/runtime_status", methods=["GET"])
+        def runtime_status():
+            return jsonify({
+                "queue_size": self.runtime_manager.task_queue.qsize(),
+                "unfinished_tasks": self.runtime_manager.task_queue.unfinished_tasks
+            }), 200
+
     def socket_listener(self):
         if os.path.exists(RUNTIME_SOCKET_PATH):
             os.remove(RUNTIME_SOCKET_PATH)
