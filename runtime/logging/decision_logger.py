@@ -13,17 +13,15 @@ class DecisionLogEntry:
                 queue_size: int,
 
                 t_scheduler: float,
-                t_local_dispatch: float,
-                t_offload: float,
+                # t_local_dispatch: float,
+                # t_offload: float,
+                t_execution: float,
 
                 # unfinished_tasks: int,
                 scheduler_name: str,
                 selected_node_id: str,
-                is_available: bool,
                 offloaded: bool,
                 decision_reason: str,
-                admission_status: str,
-                admission_reason: str,
                 local_state: str,
                 cluster_state: ClusterState,
         ):
@@ -33,18 +31,16 @@ class DecisionLogEntry:
                 self.queue_size = queue_size
 
                 self.t_scheduler = t_scheduler
-                self.t_local_dispatch = t_local_dispatch
-                self.t_offload = t_offload    
+                # self.t_local_dispatch = t_local_dispatch
+                # self.t_offload = t_offload
+                self.t_execution = t_execution
 
 
                 # self.unfinished_tasks = unfinished_tasks
                 self.scheduler_name = scheduler_name                                                                
                 self.selected_node_id = selected_node_id
-                self.is_available = is_available
                 self.offloaded = offloaded
                 self.decision_reason = decision_reason
-                self.admission_status = admission_status
-                self.admission_reason = admission_reason
                 self.local_state = local_state
                 self.cluster_state = cluster_state
 
@@ -58,12 +54,12 @@ class DecisionLogEntry:
 
                 #       "unfinished_tasks": self.unfinished_tasks,
                         "t_scheduler": self.t_scheduler,
-                        "t_local_dispatch": self.t_local_dispatch,
-                        "t_offload": self.t_offload,
+                        # "t_local_dispatch": self.t_local_dispatch,
+                        # "t_offload": self.t_offload,
+                        "t_execution": self.t_execution,
 
                       "scheduler_name": self.scheduler_name,
                       "selected_node_id": self.selected_node_id,
-                      "is_available": self.is_available,
                       "offloaded": self.offloaded,
 
                       "decision_reason": self.decision_reason,

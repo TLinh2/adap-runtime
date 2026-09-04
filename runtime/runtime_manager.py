@@ -81,7 +81,6 @@ class RuntimeManager:
         # Filter available nodes
         candidates = cluster_state.get_available_neighbors()
 
-
         # Chạy thuật toán scheduler
         scheduler_input = SchedulerInput(
             request_id=task_id,
@@ -106,13 +105,13 @@ class RuntimeManager:
         )
         execution_finished_at = time.perf_counter()
         t_execution = execution_finished_at - execution_started_at
-        
-        if scheduler_output.offloaded:
-            t_offload = t_execution
-            t_local_dispatch = "NOT_APPLICABLE"
-        else:
-            t_local_dispatch = t_execution
-            t_offload = "NOT_APPLICABLE"
+
+        # if scheduler_output.offloaded:
+        #     t_offload = t_execution
+        #     t_local_dispatch = "NOT_APPLICABLE"
+        # else:
+        #     t_local_dispatch = t_execution
+        #     t_offload = "NOT_APPLICABLE"
 
         # ===========================
         # Lưu log
@@ -125,20 +124,16 @@ class RuntimeManager:
             source_node_id=source_node_id,
 
             queue_size=host.queue_size,
-            # unfinished_tasks=host.unfinished_tasks,
             t_scheduler=t_scheduler,
-            t_local_dispatch=t_local_dispatch,
-            t_offload=t_offload,
+            # t_local_dispatch=t_local_dispatch,
+            # t_offload=t_offload,
+            t_execution=t_execution,
             
             scheduler_name=self.scheduler.name,
 
             selected_node_id=execution_result["selected_node_id"],
-            is_available=execution_result["is_available"],
             offloaded=scheduler_output.offloaded,
             decision_reason=scheduler_output.decision_reason,
-
-            admission_status=execution_result["admission_status"],
-            admission_reason=execution_result["admission_reason"],
 
             local_state=host.overall_state,
             cluster_state=cluster_state
@@ -164,11 +159,8 @@ class RuntimeManager:
         if selected_node is None:
             return {
                 "selected_node_id": None,
-                "is_available": False,
-                "admission_status": "NOT_EXECUTED",
-                "admission_reason": "NO_AVAILABLE_NODE",
-                "inf_local_finished_at": "NOT_APPLICABLE",
-                "offload_finished_at": "NOT_APPLICABLE",
+                # "inf_local_finished_at": "NOT_APPLICABLE",
+                # "offload_finished_at": "NOT_APPLICABLE",
             }
 
             # FALLBACK/ ALERT
@@ -180,30 +172,15 @@ class RuntimeManager:
         if scheduler_output.offloaded:
 
             task["source_node_id"] = HOST_ID
-            
             response = self.worker_interface.forward_request(
                 selected_node_id=selected_node_id,
                 payload=task
             )
 
-            offload_finished_at = time.time()
-
-            if not response["is_available"]:
-                scheduler_output.selected_node.is_available = False
-                print(
-                    f"[RuntimeManager] "
-                    f"Node {selected_node_id} "
-                    f"is currently not available"
-                    f"Set node {selected_node_id} is_available = False"
-                )
-
             return {
                 "selected_node_id": selected_node_id,
-                "is_available": response["is_available"],
-                "admission_status": response["admission_status"],
-                "admission_reason": response["admission_reason"],
-                "inf_local_finished_at": "NOT_APPLICABLE",
-                "offload_finished_at": offload_finished_at,
+                # "inf_local_finished_at": "NOT_APPLICABLE",
+                # "offload_finished_at": offload_finished_at,
             }
 
 
@@ -213,22 +190,18 @@ class RuntimeManager:
             selected_node_id=selected_node_id,
             payload=task
         )
-        inf_local_finished_at = time.time()
-       
 
         return {
             "selected_node_id": selected_node_id,
-            "is_available": response["is_available"],
-            "admission_status": "NOT_APPLICABLE",
-            "admission_reason": "NOT_APPLICABLE",
-            "inf_local_finished_at": inf_local_finished_at,
-            "offload_finished_at": "NOT_APPLICABLE",
+            # "inf_local_finished_at": inf_local_finished_at,
+            # "offload_finished_at": "NOT_APPLICABLE",
         }
             
     def start(self):
         self.stop_event = threading.Event()
 
         self.monitoring.collect_cluster_state()
+        self.worker_interface.start()
 
         self.state_ready.set()
         self.monitoring.start()
@@ -243,5 +216,7 @@ class RuntimeManager:
     def stop(self):
         self.stop_event.set()
         self.scheduler_thread.join()
+        self.worker_interface.stop()
+
         self.monitoring.stop()
         self.timing_logger.close()

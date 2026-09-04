@@ -29,10 +29,7 @@ class WorkerInterface:
 
         return {
             "accepted": True,
-            "is_available": True,
             "worker_id": str(selected_node_id),
-            "admission_status": "NOT_APPLICABLE",
-            "admission_reason": "NOT_APPLICABLE",
         }
 
     def local_sender_loop(self):
@@ -67,10 +64,7 @@ class WorkerInterface:
 
         return {
             "accepted": True,
-            "is_available": True,
             "worker_id": str(selected_node_id),
-            "admission_status": "NOT_APPLICABLE",
-            "admission_reason": "NOT_APPLICABLE",
         }
 
     def offload_sender_loop(self):
