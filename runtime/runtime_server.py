@@ -8,6 +8,7 @@ from runtime.monitoring.monitor import Monitoring
 from runtime.scheduler.scheduler_rr import RoundRobinScheduler
 from runtime.worker.worker_interface import WorkerInterface
 from runtime.logging.decision_logger import CSVDecisionLogger
+from runtime.logging.timing_logger import RuntimeTimingLogger
 from runtime.runtime_manager import RuntimeManager
 from runtime.state.cluster_state import ClusterState, NodeState
 from runtime.state.resource_state import ResourceState
@@ -46,6 +47,7 @@ class RuntimeServer:
             scheduler=scheduler,
             worker_interface=WorkerInterface(),
             decision_logger=CSVDecisionLogger(),
+            timing_logger=RuntimeTimingLogger(),
         )
 
         self.register_routes()

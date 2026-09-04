@@ -13,8 +13,9 @@ class DecisionLogEntry:
                 queue_size: int,
 
                 t_scheduler: float,
-                t_inf_local: float,
+                t_local_dispatch: float,
                 t_offload: float,
+                t_log: float,
 
                 # unfinished_tasks: int,
                 scheduler_name: str,
@@ -33,8 +34,8 @@ class DecisionLogEntry:
                 self.queue_size = queue_size
 
                 self.t_scheduler = t_scheduler
-                self.t_inf_local = t_inf_local
-                self.t_offload = t_offload               
+                self.t_local_dispatch = t_local_dispatch
+                self.t_offload = t_offload    
 
 
                 # self.unfinished_tasks = unfinished_tasks
@@ -58,7 +59,7 @@ class DecisionLogEntry:
 
                 #       "unfinished_tasks": self.unfinished_tasks,
                         "t_scheduler": self.t_scheduler,
-                        "t_inf_local": self.t_inf_local,
+                        "t_local_dispatch": self.t_local_dispatch,
                         "t_offload": self.t_offload,
 
                       "scheduler_name": self.scheduler_name,

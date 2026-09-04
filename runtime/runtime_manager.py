@@ -15,11 +15,13 @@ class RuntimeManager:
             scheduler,
             worker_interface,
             decision_logger,
+            timing_logger,
     ):
         self.monitoring = monitoring
         self.scheduler = scheduler
         self.worker_interface = worker_interface
         self.decision_logger = decision_logger
+        self.timing_logger = timing_logger
 
 
         # FIFO queue chứa task
@@ -79,6 +81,7 @@ class RuntimeManager:
         # Filter available nodes
         candidates = cluster_state.get_available_neighbors()
 
+
         # Chạy thuật toán scheduler
         scheduler_input = SchedulerInput(
             request_id=task_id,
@@ -86,21 +89,36 @@ class RuntimeManager:
             candidates=candidates
         )
 
+        scheduler_started_at = time.perf_counter()
         scheduler_output = self.scheduler.schedule(
             scheduler_input
         )
+        scheduler_finished_at = time.perf_counter()
 
         # Tính t_scheduler
-        t_scheduler = time.time() - task["created_at"]
+        t_scheduler = scheduler_finished_at - scheduler_started_at
 
+
+        execution_started_at = time.perf_counter()
         execution_result = self._execute_scheduler_output(
             task=task,
             scheduler_output=scheduler_output
-        )        
+        )
+        execution_finished_at = time.perf_counter()
+        t_execution = execution_finished_at - execution_started_at
+        
+        if scheduler_output.offloaded:
+            t_offload = t_execution
+            t_local_dispatch = "NOT_APPLICABLE"
+        else:
+            t_local_dispatch = t_execution
+            t_offload = "NOT_APPLICABLE"
 
         # ===========================
         # Lưu log
         # ===========================
+        logging_started_at = time.perf_counter()
+
         log_entry = DecisionLogEntry(
             timestamp=datetime.now(),
             request_id=task_id,
@@ -109,8 +127,8 @@ class RuntimeManager:
             queue_size=host.queue_size,
             # unfinished_tasks=host.unfinished_tasks,
             t_scheduler=t_scheduler,
-            t_inf_local=execution_result["inf_local_finished_at"],
-            t_offload=execution_result["offload_finished_at"],
+            t_local_dispatch=t_local_dispatch,
+            t_offload=t_offload,
             
             scheduler_name=self.scheduler.name,
 
@@ -126,6 +144,11 @@ class RuntimeManager:
             cluster_state=cluster_state
         )
         self.decision_logger.log(log_entry)
+
+        logging_finished_at = time.perf_counter()
+        t_log = logging_finished_at - logging_started_at
+
+        self.timing_logger.log(task_id=task_id, t_log=t_log)
 
     def _execute_scheduler_output(
         self,
@@ -221,3 +244,4 @@ class RuntimeManager:
         self.stop_event.set()
         self.scheduler_thread.join()
         self.monitoring.stop()
+        self.timing_logger.close()
