@@ -63,8 +63,6 @@ class DecisionLogEntry:
                       "offloaded": self.offloaded,
 
                       "decision_reason": self.decision_reason,
-                      "admission_status": self.admission_status,
-                      "admission_reason": self.admission_reason,
 
                       "local_state": self.local_state,
                       "cluster_snapshot_time": self.cluster_state.cluster_snapshot_time
