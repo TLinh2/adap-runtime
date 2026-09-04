@@ -1,12 +1,23 @@
-import requests
 import socket
 import pickle
+import threading
+from queue import Queue, Empty
 
 WORKER_SOCKET_PATH = "/tmp/adap_worker.sock"
+OFFLOAD_PORT = 9300
 
 class WorkerInterface:
     def __init__(self):
+        self.local_queue = Queue()
         self.local_socket = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        self.local_thread = None
+
+        self.offload_queue = Queue()
+        self.offload_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.offload_thread = None
+
+        self.stop_event = threading.Event()
+        
 
     def submit_local(
             self,
@@ -14,71 +25,37 @@ class WorkerInterface:
             payload: dict
     ):
 
-        try:
-            
-            message = pickle.dumps(payload, protocol=pickle.HIGHEST_PROTOCOL)
+        self.local_queue.put((selected_node_id, payload))
 
-            self.local_socket.sendto(message, WORKER_SOCKET_PATH)
+        return {
+            "accepted": True,
+            "is_available": True,
+            "worker_id": str(selected_node_id),
+            "admission_status": "NOT_APPLICABLE",
+            "admission_reason": "NOT_APPLICABLE",
+        }
 
-            return {
-                "accepted": True,
-                "is_available": True,
-                "worker_id": str(selected_node_id),
-                "admission_status": "NOT_APPLICABLE",
-                "admission_reason": "NOT_APPLICABLE",
-            }
-    
-        except OSError as e:
+    def local_sender_loop(self):
+        while not self.stop_event.is_set():
+            try:
+                (selected_node_id, payload) = self.local_queue.get(timeout=1)
+            except Empty:
+                continue
 
-            print(f"[WorkerInterface] Local inference failed: {e}")
+            try:
+                message = pickle.dumps(payload, protocol=pickle.HIGHEST_PROTOCOL)
+                self.local_socket.sendto(message, WORKER_SOCKET_PATH)
 
-            return {
-                "accepted": False,
-                "worker_id": None,
-                "is_available": False,
-                "admission_status": "NOT_APPLICABLE",
-                "admission_reason": "NOT_APPLICABLE",
-            }
-
-    def check_admission(
-        self,
-        selected_node_id: str
-    ):
-
-        url = (
-            f"http://192.168.1.{selected_node_id}:9000"
-            f"/check_admission"
-        )
-
-        try:
-
-            response = requests.get(
-                url,
-                timeout=5
-            )
-            response.raise_for_status()
-
-            data = response.json()
-
-            return {
-                "accepted": data["accepted"],
-                "is_available": data["is_available"],
-                "worker_id": str(selected_node_id),
-                "admission_reason": data["admission_reason"]
-            }
-        except requests.RequestException as e:
-
-            print(
-                f"[WorkerInterface] Admission check failed "
-                f"for node{selected_node_id}: {e}"
+            except OSError as e:
+                print(
+                "[WorkerInterface] "
+                f"Failed to dispatch local task "
+                f"{payload.get('task_id', 'UNKNOWN')}: "
+                f"{e}"
             )
 
-            return {
-                "accepted" : False,
-                "is_available": False,
-                "worker_id": str(selected_node_id),
-                "admission_reason": "NODE_UNREACHABLE"
-            }
+            finally:
+                self.local_queue.task_done()
         
     def forward_request(
             self,
@@ -86,56 +63,62 @@ class WorkerInterface:
             payload: dict
     ):
 
-        # Ask admission of neighbor
-        admission = self.check_admission(
-            selected_node_id
+        self.offload_queue.put((selected_node_id, payload))
+
+        return {
+            "accepted": True,
+            "is_available": True,
+            "worker_id": str(selected_node_id),
+            "admission_status": "NOT_APPLICABLE",
+            "admission_reason": "NOT_APPLICABLE",
+        }
+
+    def offload_sender_loop(self):
+        while not self.stop_event.is_set():
+            try:
+                (selected_node_id, payload) = self.offload_queue.get(timeout=1)
+            except Empty:
+                continue
+
+            try:
+                message = pickle.dumps(payload, protocol=pickle.HIGHEST_PROTOCOL)
+                target = (f"192.168.1.{selected_node_id}", OFFLOAD_PORT)
+                self.offload_socket.sendto(message, target)
+
+            except OSError as e:
+                print(
+                "[WorkerInterface] "
+                f"Failed to offload task "
+                f"to node "
+                f"{selected_node_id}: {e}"
+            )
+
+            finally:
+
+                self.offload_queue.task_done()
+
+    def start(self):
+        self.stop_event.clear()
+
+        self.local_thread = threading.Thread(
+            target=self.local_sender_loop,
+            daemon=True
         )
 
-        # IF neighbor rejected
-        if not admission["accepted"]:
+        self.offload_thread = threading.Thread(
+            target=self.offload_sender_loop,
+            daemon=True
+        )
 
-            return {
-                "accepted": False,
-                "is_available": admission["is_available"],
-                "worker_id": str(selected_node_id),
-                "admission_status": "REJECTED",
-                "admission_reason": admission["admission_reason"]
-            }
+        self.local_thread.start()
+        self.offload_thread.start()
 
-        # IF neighbor agreed
+    def stop(self):
+        self.stop_event.set()
+        if self.local_thread is not None:
+            self.local_thread.join()    
+        if self.offload_thread is not None:
+            self.offload_thread.join()
 
-        url = f"http://192.168.1.{selected_node_id}:9000/submit_task"
-
-        try:
-            response = requests.post(
-                url,
-                json=payload,
-                timeout=30
-            )
-
-            response.raise_for_status()
-
-            data = response.json()
-
-            return {
-                "accepted": True,
-                "is_available": admission["is_available"],
-                "worker_id": str(selected_node_id),
-                "admission_status": "ACCEPTED",
-                "queue_size": data["queue_size"],
-                "admission_reason": admission["admission_reason"]
-            }
-
-        except requests.RequestException as e:
-            print(
-                f"[WorkerInterface] Failed to forward request "
-                f"to node {selected_node_id}: {e}"
-            )
-
-            return {
-                "accepted": False,
-                "is_available": False,
-                "worker_id": str(selected_node_id),
-                "admission_status": "FAILED",
-                "admission_reason": "FORWARD_FAILED"
-            }
+        self.local_socket.close()
+        self.offload_socket.close()
