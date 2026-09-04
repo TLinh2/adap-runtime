@@ -15,7 +15,6 @@ class DecisionLogEntry:
                 t_scheduler: float,
                 t_local_dispatch: float,
                 t_offload: float,
-                t_log: float,
 
                 # unfinished_tasks: int,
                 scheduler_name: str,
