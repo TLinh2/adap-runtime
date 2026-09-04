@@ -17,6 +17,7 @@ from runtime.scheduler.scheduler_manager import create_scheduler
 from runtime.state.scheduler_types import DecisionReason, AdmissionReason
 
 RUNTIME_SOCKET_PATH = "/tmp/adap_runtime.sock"
+OFFLOAD_PORT = 9300
 
 class RuntimeServer:
 
@@ -29,6 +30,8 @@ class RuntimeServer:
         self.runtime_socket = None
         self.socket_thread = None
 
+        self.offload_socket = None
+        self.offload_thread = None
 
         workers = {
             "alice": NodeState(node_id="163"),
@@ -53,38 +56,6 @@ class RuntimeServer:
         self.register_routes()
 
     def register_routes(self):
-
-        @self.app.route(
-            "/check_admission",
-            methods=["GET"]
-        )
-        def check_admission():
-            host = self.runtime_manager.monitoring.cluster_state.host
-
-            # second check
-            if host.overall_state == ResourceState.CRITICAL:
-                return jsonify({
-                "accepted": False,
-                "admission_reason": AdmissionReason.NODE_CRITICAL,
-                "is_available": False,
-                "overall_state": host.overall_state,
-            }), 200
-
-            if host.overall_state == ResourceState.WARNING:
-                return jsonify({
-                "accepted": False,
-                "admission_reason": AdmissionReason.NODE_WARNING,
-                "is_available": False,
-                "overall_state": host.overall_state,
-            }), 200
-
-            return jsonify({
-                "accepted": True,
-                "admission_reason": AdmissionReason.CAPACITY_AVAILABLE,
-                "is_available": True,
-                "overall_state": host.overall_state,
-            }), 200
-
 
         @self.app.route("/submit_task", methods=["POST"])
         def submit_task():
@@ -155,18 +126,59 @@ class RuntimeServer:
             target=self.socket_listener,
             daemon=True
         )
+        self.offload_thread = threading.Thread(
+            target=self.offload_listener,
+            daemon=True
+        )
+
+        self.offload_thread.start()
         self.socket_thread.start()
 
     def stop_socket_listener(self):
         self.socket_stop_event.set()
         if self.runtime_socket is not None:
             self.runtime_socket.close()
+        if self.offload_socket is not None:
+            self.offload_socket.close()
+
+        if self.offload_thread is not None:
+            self.offload_thread.join()
 
         if self.socket_thread is not None:
             self.socket_thread.join()
 
         if os.path.exists(RUNTIME_SOCKET_PATH):
             os.remove(RUNTIME_SOCKET_PATH)
+
+    def offload_listener(self):
+        self.offload_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.offload_socket.bind(("0.0.0.0", OFFLOAD_PORT))
+        self.offload_socket.settimeout(1.0)
+
+        print(
+            f"[RuntimeServer] "
+            f"Listening for offloaded tasks "
+            f"on UDP port {OFFLOAD_PORT}"
+        )
+
+        while not self.socket_stop_event.is_set():
+
+            try:
+                message, address = (self.offload_socket.recvfrom(65535))
+            except socket.timeout:
+                continue
+
+            except OSError:
+                break
+            try:
+                payload = pickle.loads(message)
+                self.runtime_manager.submit_task(payload)
+            except Exception as e:
+                print(
+                    "[RuntimeServer] "
+                    f"Failed receiving "
+                    f"offloaded task: {e}"
+                )
 
     def start(self):
 
