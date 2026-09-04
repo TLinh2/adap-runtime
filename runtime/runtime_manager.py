@@ -2,6 +2,7 @@ from datetime import datetime
 from queue import Queue
 import threading
 from queue import Empty
+import time
 from runtime.state.scheduler_types import DecisionReason, SchedulerInput, SchedulerOutput
 from runtime.logging.decision_logger import DecisionLogEntry
 from config import HOST_ID
@@ -89,6 +90,9 @@ class RuntimeManager:
             scheduler_input
         )
 
+        # Tính t_scheduler
+        t_scheduler = time.time() - task["created_at"]
+
         execution_result = self._execute_scheduler_output(
             task=task,
             scheduler_output=scheduler_output
@@ -104,6 +108,9 @@ class RuntimeManager:
 
             queue_size=host.queue_size,
             # unfinished_tasks=host.unfinished_tasks,
+            t_scheduler=t_scheduler,
+            t_inf_local=execution_result["inf_local_finished_at"],
+            t_offload=execution_result["offload_finished_at"],
             
             scheduler_name=self.scheduler.name,
 
@@ -136,7 +143,9 @@ class RuntimeManager:
                 "selected_node_id": None,
                 "is_available": False,
                 "admission_status": "NOT_EXECUTED",
-                "admission_reason": "NO_AVAILABLE_NODE"
+                "admission_reason": "NO_AVAILABLE_NODE",
+                "inf_local_finished_at": "NOT_APPLICABLE",
+                "offload_finished_at": "NOT_APPLICABLE",
             }
 
             # FALLBACK/ ALERT
@@ -154,6 +163,8 @@ class RuntimeManager:
                 payload=task
             )
 
+            offload_finished_at = time.time()
+
             if not response["is_available"]:
                 scheduler_output.selected_node.is_available = False
                 print(
@@ -167,7 +178,9 @@ class RuntimeManager:
                 "selected_node_id": selected_node_id,
                 "is_available": response["is_available"],
                 "admission_status": response["admission_status"],
-                "admission_reason": response["admission_reason"]
+                "admission_reason": response["admission_reason"],
+                "inf_local_finished_at": "NOT_APPLICABLE",
+                "offload_finished_at": offload_finished_at,
             }
 
 
@@ -177,12 +190,16 @@ class RuntimeManager:
             selected_node_id=selected_node_id,
             payload=task
         )
+        inf_local_finished_at = time.time()
+       
 
         return {
             "selected_node_id": selected_node_id,
             "is_available": response["is_available"],
             "admission_status": "NOT_APPLICABLE",
-            "admission_reason": "NOT_APPLICABLE"
+            "admission_reason": "NOT_APPLICABLE",
+            "inf_local_finished_at": inf_local_finished_at,
+            "offload_finished_at": "NOT_APPLICABLE",
         }
             
     def start(self):

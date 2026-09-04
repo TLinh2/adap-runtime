@@ -19,10 +19,7 @@ class RoundRobinScheduler(Scheduler):
         host = scheduler_input.host
         candidates = scheduler_input.candidates
 
-        should_offload = (
-            host.cpu_state == ResourceState.CRITICAL
-            and (host.queue_size) >= 10
-        )
+        should_offload = (host.cpu_state == ResourceState.CRITICAL and (host.queue_size) >= 10) or host.overall_state == ResourceState.CRITICAL
 
         # Case 1: Local
         if not should_offload:

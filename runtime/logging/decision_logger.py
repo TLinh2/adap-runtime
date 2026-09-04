@@ -11,6 +11,11 @@ class DecisionLogEntry:
                 request_id: int,
                 source_node_id: str,
                 queue_size: int,
+
+                t_scheduler: float,
+                t_inf_local: float,
+                t_offload: float,
+
                 # unfinished_tasks: int,
                 scheduler_name: str,
                 selected_node_id: str,
@@ -26,6 +31,12 @@ class DecisionLogEntry:
                 self.request_id = request_id
                 self.source_node_id = source_node_id
                 self.queue_size = queue_size
+
+                self.t_scheduler = t_scheduler
+                self.t_inf_local = t_inf_local
+                self.t_offload = t_offload               
+
+
                 # self.unfinished_tasks = unfinished_tasks
                 self.scheduler_name = scheduler_name                                                                
                 self.selected_node_id = selected_node_id
@@ -41,31 +52,25 @@ class DecisionLogEntry:
                
                row = {
                       "timestamp": self.timestamp,
-
                       "request_id": self.request_id,
-
                       "source_node_id": self.source_node_id,
-
                       "queue_size": self.queue_size,
 
                 #       "unfinished_tasks": self.unfinished_tasks,
+                        "t_scheduler": self.t_scheduler,
+                        "t_inf_local": self.t_inf_local,
+                        "t_offload": self.t_offload,
 
                       "scheduler_name": self.scheduler_name,
-
                       "selected_node_id": self.selected_node_id,
-
                       "is_available": self.is_available,
-
                       "offloaded": self.offloaded,
 
                       "decision_reason": self.decision_reason,
-
                       "admission_status": self.admission_status,
-
                       "admission_reason": self.admission_reason,
 
                       "local_state": self.local_state,
-
                       "cluster_snapshot_time": self.cluster_state.cluster_snapshot_time
                }
 
