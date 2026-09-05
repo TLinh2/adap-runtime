@@ -116,7 +116,7 @@ class Monitoring:
             )
 
     def broadcast_loop(self):
-        while not self.stop_event().is_set():
+        while not self.stop_event.is_set():
             self.broadcast_host_state()
             self.stop_event.wait(BROADCAST_INTERVAL)
 
