@@ -85,8 +85,8 @@ class RuntimeServer:
             return jsonify({
                 "queue_size": self.runtime_manager.task_queue.qsize(),
                 "unfinished_tasks": self.runtime_manager.task_queue.unfinished_tasks,
-                "local_queue": self.runtime_manager.worker_interface.local_queue,
-                "offload_queue": self.runtime_manager.worker_interface.offload_queue
+                "local_queue": self.runtime_manager.worker_interface.local_queue.qsize(),
+                "offload_queue": self.runtime_manager.worker_interface.offload_queue.qsize()
             }), 200
 
     def socket_listener(self):
