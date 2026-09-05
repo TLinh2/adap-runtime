@@ -98,7 +98,7 @@ class Monitoring:
             "queue_size": host.queue_size,
             "unfinished_tasks": host.unfinished_tasks,
 
-            "overall_state": host.overall_state.value,
+            "overall_state": host.overall_state,
             "accept_offload": host.is_available,
         }
 
