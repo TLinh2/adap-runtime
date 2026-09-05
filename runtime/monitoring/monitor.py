@@ -31,7 +31,7 @@ class Monitoring:
         self.listener_thread = None
         self.broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.broadcast_socket.setsockopt(
-            socket.SOL_SOCKETM,
+            socket.SOL_SOCKET,
             socket.SO_BROADCAST,
             1
         )
