@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import pickle
 import socket
 import os
-
+import json
 import threading
 import time
 
@@ -24,7 +24,7 @@ task_queue = Queue()
 
 MODEL_PATH = "./onnx/bearing_cnn.onnx"
 WORKER_SOCKET_PATH = "/tmp/adap_worker.sock"
-
+WORKER_STATUS_SOCKET_PATH = "/tmp/adap_worker_status.sock"
 print("[Worker] Loading model...")
 
 session = ort.InferenceSession(
@@ -221,7 +221,74 @@ def socket_listener():
                 "[Worker] "
                 f"Socket receive failed: {e}"
             )
+def status_socket_listener():
 
+    if os.path.exists(
+        WORKER_STATUS_SOCKET_PATH
+    ):
+        os.remove(
+            WORKER_STATUS_SOCKET_PATH
+        )
+
+    status_socket = socket.socket(
+        socket.AF_UNIX,
+        socket.SOCK_DGRAM
+    )
+
+    status_socket.bind(
+        WORKER_STATUS_SOCKET_PATH
+    )
+
+    print(
+        f"[Worker] "
+        f"Status socket listening on "
+        f"{WORKER_STATUS_SOCKET_PATH}"
+    )
+
+    while True:
+
+        try:
+
+            message, client_address = (
+                status_socket.recvfrom(
+                    4096
+                )
+            )
+
+            request_data = json.loads(
+                message.decode(
+                    "utf-8"
+                )
+            )
+
+            if (request_data.get("type")!= "STATUS_REQUEST"):
+                continue
+
+            response_data = {
+                "queue_size":
+                    task_queue.qsize(),
+
+                "unfinished_tasks":
+                    task_queue.unfinished_tasks
+            }
+
+            response = json.dumps(
+                response_data
+            ).encode(
+                "utf-8"
+            )
+
+            status_socket.sendto(
+                response,
+                client_address
+            )
+
+        except Exception as e:
+
+            print(
+                "[Worker] "
+                f"Status socket failed: {e}"
+            )
 
 # MAIN
 
@@ -237,6 +304,13 @@ if __name__ == "__main__":
         target=socket_listener,
         daemon=True
     )
+
+    status_socket_thread = threading.Thread(
+        target=status_socket_listener,
+        daemon=True
+    )
+
+    status_socket_thread.start()
 
     socket_thread.start()
 

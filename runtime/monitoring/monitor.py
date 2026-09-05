@@ -1,13 +1,14 @@
 import threading
 import time
-import requests
 from datetime import datetime
 import psutil
 import socket
 import json
 from runtime.state.cluster_state import ClusterState
 from runtime.state.resource_state import ResourceState
+import os
 
+WORKER_STATUS_SOCKET_PATH = "/tmp/adap_worker_status.sock"
 BROADCAST_ADDRESS = "192.168.1.255"
 BROADCAST_PORT = 9400
 
@@ -26,6 +27,32 @@ class Monitoring:
         self.stop_event = threading.Event()
         self.monitor_thread = None
 
+        # Status worker
+        self.worker_status_socket = socket.socket(
+            socket.AF_UNIX,
+            socket.SOCK_DGRAM
+        )
+
+        self.worker_status_client_path = (
+            f"/tmp/adap_monitor_status_"
+            f"{self.cluster_state.host.node_id}.sock"
+        )
+
+        if os.path.exists(
+            self.worker_status_client_path
+        ):
+            os.remove(
+                self.worker_status_client_path
+            )
+
+        self.worker_status_socket.bind(
+            self.worker_status_client_path
+        )
+
+        self.worker_status_socket.settimeout(
+            1.0
+        )
+
         # Broadcast
         self.broadcast_thread = None
         self.listener_thread = None
@@ -39,27 +66,67 @@ class Monitoring:
         self.listener_socket = None
         self.sequence = 0
         self.neighbor_sequences = {
-            node.node_id: -1
+            str(node.node_id): -1
             for node in self.cluster_state.neighbors
         }
         self.neighbor_last_seen = {
-            node.node_id: None
+            str(node.node_id): None
             for node in self.cluster_state.neighbors
         }
         self.last_accept_offload = None
 
+    def get_worker_status(self):
+        request_payload = {
+            "type": "STATUS_REQUEST"
+        }
+
+        message = json.dumps(
+            request_payload
+        ).encode(
+            "utf-8"
+        )
+
+        self.worker_status_socket.sendto(
+            message,
+            WORKER_STATUS_SOCKET_PATH
+        )
+
+        response, _ = (
+            self.worker_status_socket.recvfrom(
+                4096
+            )
+        )
+
+        return json.loads(
+            response.decode(
+                "utf-8"
+            )
+        )
+    
     def collect_host_state(self):
         host = self.cluster_state.host
 
         cpu_percent = psutil.cpu_percent(interval=None)
         ram_percent = psutil.virtual_memory().percent
         temperature = psutil.sensors_temperatures()['cpu_thermal'][0].current
-        queue_data = requests.get(
-            f"http://192.168.1.{host.node_id}:8000/status",
-            timeout=3
-        ).json()
-        queue_size = queue_data["queue_size"]
-        unfinished_tasks = queue_data["unfinished_tasks"]
+
+        try:
+            queue_data = self.get_worker_status()
+            queue_size = queue_data["queue_size"]
+            unfinished_tasks = queue_data["unfinished_tasks"]
+        except (
+            OSError,
+            socket.timeout,
+            json.JSONDecodeError
+        ) as e:
+
+            print(
+                "[Monitoring] "
+                f"Failed getting local "
+                f"worker status: {e}"
+            )
+            queue_size = host.queue_size
+            unfinished_tasks = host.unfinished_tasks
 
         host.update(
             cpu_percent=cpu_percent,
@@ -77,12 +144,9 @@ class Monitoring:
 
         self.last_accept_offload = accept_offload
         if previous_accept_offload is not None and previous_accept_offload != accept_offload:
-            self.broadcast_host_state(immediate=True)
+            self.broadcast_host_state()
 
-    def broadcast_host_state(
-        self,
-        immediate=False
-    ):
+    def broadcast_host_state(self):
         host = self.cluster_state.host
 
         self.sequence += 1
@@ -191,7 +255,8 @@ class Monitoring:
         now = time.perf_counter()
 
         for node in self.cluster_state.neighbors:
-            last_seen = self.neighbor_last_seen[node.node_id]
+            node_id = str(node.node_id)
+            last_seen = self.neighbor_last_seen[node_id]
             if last_seen is None:
                 continue
 
@@ -234,7 +299,7 @@ class Monitoring:
         self.stop_event.set()
 
         if self.listener_socket is not None:
-            self.listener_socket.join()
+            self.listener_socket.close()
 
         if self.monitor_thread is not None:
             self.monitor_thread.join()
@@ -245,4 +310,7 @@ class Monitoring:
         if self.listener_thread is not None:
             self.listener_thread.join()
 
+        self.worker_status_socket.close()
         self.broadcast_socket.close()
+        if os.path.exists(self.worker_status_client_path):
+            os.remove(self.worker_status_client_path)
