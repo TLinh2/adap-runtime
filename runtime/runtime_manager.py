@@ -119,7 +119,7 @@ class RuntimeManager:
 
         if decision == "LOCAL":
             self.worker_interface.submit_local(selected_node_id=host.node_id, payload=task)
-        
+            selected_node_id = host.node_id
         if decision == "OFFLOAD":
             candidates = cluster_state.get_available_neighbors()
             scheduler_input = SchedulerInput(
