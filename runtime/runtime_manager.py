@@ -103,12 +103,8 @@ class RuntimeManager:
 
         is_remote_task = (str(source_node_id)!= str(HOST_ID))
         if is_remote_task:
-
-            self.worker_interface.submit_local(
-                selected_node_id=host.node_id,
-                payload=task
-            )
-
+            self.worker_interface.submit_local(selected_node_id=host.node_id, payload=task)
+            selected_node_id = host.node_id
         else:
             decision = self.offload_decision.decide(
                 task=task,
@@ -148,28 +144,28 @@ class RuntimeManager:
                 )
 
             
-            # ===========================
-            # Lưu log
-            # ===========================
-            logging_started_at = time.perf_counter()
+        # ===========================
+        # Lưu log
+        # ===========================
+        logging_started_at = time.perf_counter()
 
-            log_entry = DecisionLogEntry(
-                timestamp=datetime.now(),
-                request_id=task_id,
-                source_node_id=source_node_id,            
-                scheduler_name=self.scheduler.name,
-                selected_node_id=selected_node_id,
-                offloaded=decision,
+        log_entry = DecisionLogEntry(
+            timestamp=datetime.now(),
+            request_id=task_id,
+            source_node_id=source_node_id,            
+            scheduler_name=self.scheduler.name,
+            selected_node_id=selected_node_id,
+            offloaded=decision,
 
-                local_state=host.overall_state,
-                cluster_state=cluster_state
-            )
-            self.decision_logger.log(log_entry)
+            local_state=host.overall_state,
+            cluster_state=cluster_state
+        )
+        self.decision_logger.log(log_entry)
 
-            logging_finished_at = time.perf_counter()
-            t_log = logging_finished_at - logging_started_at
+        logging_finished_at = time.perf_counter()
+        t_log = logging_finished_at - logging_started_at
 
-            self.timing_logger.log(task_id=task_id, t_log=t_log)
+        self.timing_logger.log(task_id=task_id, t_log=t_log)
             
     def start(self):
         self.stop_event = threading.Event()
