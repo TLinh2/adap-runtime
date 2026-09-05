@@ -118,28 +118,19 @@ class RuntimeManager:
         )
 
         if decision == "LOCAL":
-            execution_started_at = time.perf_counter()
             self.worker_interface.submit_local(selected_node_id=host.node_id, payload=task)
-            execution_finished_at = time.perf_counter()
-            t_execution = execution_finished_at - execution_started_at
-
             return
         
         if decision == "OFFLOAD":
             candidates = cluster_state.get_available_neighbors()
             scheduler_input = SchedulerInput(
                 request_id=task_id,
-                host=host,
                 candidates=candidates
             )        
 
-            scheduler_started_at = time.perf_counter()
             scheduler_output = self.scheduler.schedule(
                 scheduler_input
             )
-            scheduler_finished_at = time.perf_counter()
-            # Tính t_scheduler
-            t_scheduler = scheduler_finished_at - scheduler_started_at
 
             selected_node = scheduler_output.selected_node
             # CASE 1
@@ -163,32 +154,29 @@ class RuntimeManager:
         # ===========================
         # Lưu log
         # ===========================
-        # logging_started_at = time.perf_counter()
+        logging_started_at = time.perf_counter()
 
-        # log_entry = DecisionLogEntry(
-        #     timestamp=datetime.now(),
-        #     request_id=task_id,
-        #     source_node_id=source_node_id,
+        log_entry = DecisionLogEntry(
+            timestamp=datetime.now(),
+            request_id=task_id,
+            source_node_id=source_node_id,
 
-        #     queue_size=host.queue_size,
-        #     t_scheduler=t_scheduler,
-        #     t_execution=t_execution,
+            queue_size=host.queue_size,
             
-        #     scheduler_name=self.scheduler.name,
+            scheduler_name=self.scheduler.name,
+            selected_node_id=selected_node_id,
+            offloaded=decision,
+            decision_reason=scheduler_output.decision_reason,
 
-        #     selected_node_id=execution_result["selected_node_id"],
-        #     offloaded=scheduler_output.offloaded,
-        #     decision_reason=scheduler_output.decision_reason,
+            local_state=host.overall_state,
+            cluster_state=cluster_state
+        )
+        self.decision_logger.log(log_entry)
 
-        #     local_state=host.overall_state,
-        #     cluster_state=cluster_state
-        # )
-        # self.decision_logger.log(log_entry)
+        logging_finished_at = time.perf_counter()
+        t_log = logging_finished_at - logging_started_at
 
-        # logging_finished_at = time.perf_counter()
-        # t_log = logging_finished_at - logging_started_at
-
-        # self.timing_logger.log(task_id=task_id, t_log=t_log)
+        self.timing_logger.log(task_id=task_id, t_log=t_log)
             
     def start(self):
         self.stop_event = threading.Event()

@@ -82,8 +82,11 @@ class ClusterState:
 
             prefix = f"node_{node.node_id}"
 
+            data[f"{prefix}_is_available"] = node.is_available
             data[f"{prefix}_cpu_percent"] = node.cpu_percent
             data[f"{prefix}_ram_percent"] = node.ram_percent
             data[f"{prefix}_temperature"] = node.temperature
+            data[f"{prefix}_queue_size"] = node.queue_size
+            data[f"{prefix}_avg_service_time"] = node.avg_service_time
 
         return data

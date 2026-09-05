@@ -12,11 +12,6 @@ class DecisionLogEntry:
                 source_node_id: str,
                 queue_size: int,
 
-                t_scheduler: float,
-                # t_local_dispatch: float,
-                # t_offload: float,
-                t_execution: float,
-
                 # unfinished_tasks: int,
                 scheduler_name: str,
                 selected_node_id: str,
@@ -29,12 +24,6 @@ class DecisionLogEntry:
                 self.request_id = request_id
                 self.source_node_id = source_node_id
                 self.queue_size = queue_size
-
-                self.t_scheduler = t_scheduler
-                # self.t_local_dispatch = t_local_dispatch
-                # self.t_offload = t_offload
-                self.t_execution = t_execution
-
 
                 # self.unfinished_tasks = unfinished_tasks
                 self.scheduler_name = scheduler_name                                                                
@@ -53,10 +42,6 @@ class DecisionLogEntry:
                       "queue_size": self.queue_size,
 
                 #       "unfinished_tasks": self.unfinished_tasks,
-                        "t_scheduler": self.t_scheduler,
-                        # "t_local_dispatch": self.t_local_dispatch,
-                        # "t_offload": self.t_offload,
-                        "t_execution": self.t_execution,
 
                       "scheduler_name": self.scheduler_name,
                       "selected_node_id": self.selected_node_id,
