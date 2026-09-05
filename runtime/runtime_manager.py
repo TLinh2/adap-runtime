@@ -101,15 +101,15 @@ class RuntimeManager:
             )
             return
 
-        # is_remote_task = (str(source_node_id)!= str(HOST_ID))
-        # if is_remote_task:
+        is_remote_task = (str(source_node_id)!= str(HOST_ID))
+        if is_remote_task:
 
-        #     self.worker_interface.submit_local(
-        #         selected_node_id=host.node_id,
-        #         payload=task
-        #     )
+            self.worker_interface.submit_local(
+                selected_node_id=host.node_id,
+                payload=task
+            )
 
-        #     return
+            return
 
         decision = self.offload_decision.decide(
             task=task,
