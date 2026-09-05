@@ -120,6 +120,7 @@ class RuntimeManager:
         if decision == "LOCAL":
             self.worker_interface.submit_local(selected_node_id=host.node_id, payload=task)
             selected_node_id = host.node_id
+            decision_reason = DecisionReason.LOCAL_UNDER_THRESHOLD
         if decision == "OFFLOAD":
             candidates = cluster_state.get_available_neighbors()
             scheduler_input = SchedulerInput(
@@ -132,6 +133,7 @@ class RuntimeManager:
             )
 
             selected_node = scheduler_output.selected_node
+            decision_reason = scheduler_output.decision_reason
             # CASE 1
             # No node can execute this task
             if selected_node is None:
@@ -157,14 +159,11 @@ class RuntimeManager:
         log_entry = DecisionLogEntry(
             timestamp=datetime.now(),
             request_id=task_id,
-            source_node_id=source_node_id,
-
-            queue_size=host.queue_size,
-            
+            source_node_id=source_node_id,            
             scheduler_name=self.scheduler.name,
             selected_node_id=selected_node_id,
             offloaded=decision,
-            decision_reason=scheduler_output.decision_reason,
+            decision_reason=decision_reason,
 
             local_state=host.overall_state,
             cluster_state=cluster_state

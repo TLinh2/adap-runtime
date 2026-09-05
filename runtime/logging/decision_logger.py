@@ -10,7 +10,6 @@ class DecisionLogEntry:
                 timestamp,
                 request_id: int,
                 source_node_id: str,
-                queue_size: int,
 
                 # unfinished_tasks: int,
                 scheduler_name: str,
@@ -23,7 +22,6 @@ class DecisionLogEntry:
                 self.timestamp = timestamp
                 self.request_id = request_id
                 self.source_node_id = source_node_id
-                self.queue_size = queue_size
 
                 # self.unfinished_tasks = unfinished_tasks
                 self.scheduler_name = scheduler_name                                                                
@@ -39,7 +37,6 @@ class DecisionLogEntry:
                       "timestamp": self.timestamp,
                       "request_id": self.request_id,
                       "source_node_id": self.source_node_id,
-                      "queue_size": self.queue_size,
 
                 #       "unfinished_tasks": self.unfinished_tasks,
 

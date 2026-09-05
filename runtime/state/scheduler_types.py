@@ -1,6 +1,7 @@
 from runtime.state.cluster_state import NodeState
 
 class DecisionReason:
+    LOCAL_UNDER_THRESHOLD = "LOCAL_UNDER_THRESHOLD"
     ROUND_ROBIN = "ROUND_ROBIN"
     ALL_NODES_BUSY = "ALL_NODES_BUSY"
     NO_NODES_AROUND = "NO_NODES_AROUND"
