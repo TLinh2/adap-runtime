@@ -15,7 +15,6 @@ class DecisionLogEntry:
                 scheduler_name: str,
                 selected_node_id: str,
                 offloaded: bool,
-                decision_reason: str,
                 local_state: str,
                 cluster_state: ClusterState,
         ):
@@ -27,7 +26,6 @@ class DecisionLogEntry:
                 self.scheduler_name = scheduler_name                                                                
                 self.selected_node_id = selected_node_id
                 self.offloaded = offloaded
-                self.decision_reason = decision_reason
                 self.local_state = local_state
                 self.cluster_state = cluster_state
 
@@ -43,8 +41,6 @@ class DecisionLogEntry:
                       "scheduler_name": self.scheduler_name,
                       "selected_node_id": self.selected_node_id,
                       "offloaded": self.offloaded,
-
-                      "decision_reason": self.decision_reason,
 
                       "local_state": self.local_state,
                       "cluster_snapshot_time": self.cluster_state.cluster_snapshot_time
