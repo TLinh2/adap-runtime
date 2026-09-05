@@ -6,6 +6,7 @@ import time
 from runtime.state.scheduler_types import DecisionReason, SchedulerInput, SchedulerOutput
 from runtime.logging.decision_logger import DecisionLogEntry
 from config import HOST_ID
+from runtime.state.resource_state import ResourceState
 
 class RuntimeManager:
 
@@ -14,12 +15,14 @@ class RuntimeManager:
             monitoring,
             scheduler,
             worker_interface,
+            offload_decision,
             decision_logger,
             timing_logger,
     ):
         self.monitoring = monitoring
         self.scheduler = scheduler
         self.worker_interface = worker_interface
+        self.offload_decision = offload_decision
         self.decision_logger = decision_logger
         self.timing_logger = timing_logger
 
@@ -38,13 +41,11 @@ class RuntimeManager:
             "queue_size": self.task_queue.qsize()
         }
 
-    
-
     # =================
     # Background Thread
     # =================
 
-    def scheduler_loop(self):
+    def runtime_loop(self):
 
         while not self.stop_event.is_set():
 
@@ -69,6 +70,21 @@ class RuntimeManager:
             finally:
                 self.task_queue.task_done()
 
+    def _handle_fallback(
+        self,
+        task,
+        reason
+    ):
+        # TODO:
+        # implement fallback policy later
+
+        print(
+            "[RuntimeManager] "
+            f"Fallback task "
+            f"{task.get('task_id', 'UNKNOWN')} "
+            f"reason={reason}"
+        )
+
     def _process_task(self, task):
 
         task_id = task["task_id"]
@@ -78,124 +94,101 @@ class RuntimeManager:
         cluster_state = self.monitoring.cluster_state
         host = cluster_state.host
 
-        # Filter available nodes
-        candidates = cluster_state.get_available_neighbors()
+        if host.overall_state == ResourceState.CRITICAL:
+            self._handle_fallback(
+                task=task,
+                reason="HOST_CRITICAL"
+            )
+            return
 
-        # Chạy thuật toán scheduler
-        scheduler_input = SchedulerInput(
-            request_id=task_id,
-            host=cluster_state.host,
-            candidates=candidates
-        )
+        is_remote_task = (str(source_node_id)!= str(HOST_ID))
+        if is_remote_task:
 
-        scheduler_started_at = time.perf_counter()
-        scheduler_output = self.scheduler.schedule(
-            scheduler_input
-        )
-        scheduler_finished_at = time.perf_counter()
+            self.worker_interface.submit_local(
+                selected_node_id=host.node_id,
+                payload=task
+            )
 
-        # Tính t_scheduler
-        t_scheduler = scheduler_finished_at - scheduler_started_at
+            return
 
-
-        execution_started_at = time.perf_counter()
-        execution_result = self._execute_scheduler_output(
+        decision = self.offload_decision.decide(
             task=task,
-            scheduler_output=scheduler_output
+            host=host,
+            local_queue_size=(self.worker_interface.local_queue.qsize())
         )
-        execution_finished_at = time.perf_counter()
-        t_execution = execution_finished_at - execution_started_at
 
-        # if scheduler_output.offloaded:
-        #     t_offload = t_execution
-        #     t_local_dispatch = "NOT_APPLICABLE"
-        # else:
-        #     t_local_dispatch = t_execution
-        #     t_offload = "NOT_APPLICABLE"
+        if decision == "LOCAL":
+            execution_started_at = time.perf_counter()
+            self.worker_interface.submit_local(selected_node_id=host.node_id, payload=task)
+            execution_finished_at = time.perf_counter()
+            t_execution = execution_finished_at - execution_started_at
 
-        # ===========================
-        # Lưu log
-        # ===========================
-        logging_started_at = time.perf_counter()
+            return
+        
+        if decision == "OFFLOAD":
+            candidates = cluster_state.get_available_neighbors()
+            scheduler_input = SchedulerInput(
+                request_id=task_id,
+                host=host,
+                candidates=candidates
+            )        
 
-        log_entry = DecisionLogEntry(
-            timestamp=datetime.now(),
-            request_id=task_id,
-            source_node_id=source_node_id,
+            scheduler_started_at = time.perf_counter()
+            scheduler_output = self.scheduler.schedule(
+                scheduler_input
+            )
+            scheduler_finished_at = time.perf_counter()
+            # Tính t_scheduler
+            t_scheduler = scheduler_finished_at - scheduler_started_at
 
-            queue_size=host.queue_size,
-            t_scheduler=t_scheduler,
-            # t_local_dispatch=t_local_dispatch,
-            # t_offload=t_offload,
-            t_execution=t_execution,
-            
-            scheduler_name=self.scheduler.name,
+            selected_node = scheduler_output.selected_node
+            # CASE 1
+            # No node can execute this task
+            if selected_node is None:
+                self._handle_fallback(task=task, reason="ALL_NODES_BUSY")
+                return
+    
+            # CASE 2
+            # OFFLOAD (Đã lựa chọn ra node)
+            selected_node_id = selected_node.node_id
 
-            selected_node_id=execution_result["selected_node_id"],
-            offloaded=scheduler_output.offloaded,
-            decision_reason=scheduler_output.decision_reason,
-
-            local_state=host.overall_state,
-            cluster_state=cluster_state
-        )
-        self.decision_logger.log(log_entry)
-
-        logging_finished_at = time.perf_counter()
-        t_log = logging_finished_at - logging_started_at
-
-        self.timing_logger.log(task_id=task_id, t_log=t_log)
-
-    def _execute_scheduler_output(
-        self,
-        task,
-        scheduler_output
-    ):
-
-        selected_node = scheduler_output.selected_node
-
-        # CASE 1
-        # No node can execute this task
-
-        if selected_node is None:
-            return {
-                "selected_node_id": None,
-                # "inf_local_finished_at": "NOT_APPLICABLE",
-                # "offload_finished_at": "NOT_APPLICABLE",
-            }
-
-            # FALLBACK/ ALERT
-
-        # CASE 2
-        # OFFLOAD (Đã lựa chọn ra node)
-        selected_node_id = selected_node.node_id
-
-        if scheduler_output.offloaded:
-
-            task["source_node_id"] = HOST_ID
-            response = self.worker_interface.forward_request(
+            # task["source_node_id"] = HOST_ID
+            self.worker_interface.forward_request(
                 selected_node_id=selected_node_id,
                 payload=task
             )
 
-            return {
-                "selected_node_id": selected_node_id,
-                # "inf_local_finished_at": "NOT_APPLICABLE",
-                # "offload_finished_at": offload_finished_at,
-            }
+            return
+        
+        # ===========================
+        # Lưu log
+        # ===========================
+        # logging_started_at = time.perf_counter()
 
+        # log_entry = DecisionLogEntry(
+        #     timestamp=datetime.now(),
+        #     request_id=task_id,
+        #     source_node_id=source_node_id,
 
-        # CASE 3
-        # LOCAL            
-        response = self.worker_interface.submit_local(
-            selected_node_id=selected_node_id,
-            payload=task
-        )
+        #     queue_size=host.queue_size,
+        #     t_scheduler=t_scheduler,
+        #     t_execution=t_execution,
+            
+        #     scheduler_name=self.scheduler.name,
 
-        return {
-            "selected_node_id": selected_node_id,
-            # "inf_local_finished_at": inf_local_finished_at,
-            # "offload_finished_at": "NOT_APPLICABLE",
-        }
+        #     selected_node_id=execution_result["selected_node_id"],
+        #     offloaded=scheduler_output.offloaded,
+        #     decision_reason=scheduler_output.decision_reason,
+
+        #     local_state=host.overall_state,
+        #     cluster_state=cluster_state
+        # )
+        # self.decision_logger.log(log_entry)
+
+        # logging_finished_at = time.perf_counter()
+        # t_log = logging_finished_at - logging_started_at
+
+        # self.timing_logger.log(task_id=task_id, t_log=t_log)
             
     def start(self):
         self.stop_event = threading.Event()
@@ -207,15 +200,15 @@ class RuntimeManager:
         self.monitoring.start()
 
 
-        self.scheduler_thread = threading.Thread(
-            target=self.scheduler_loop
+        self.runtime_thread = threading.Thread(
+            target=self.runtime_loop
         )
 
-        self.scheduler_thread.start()
+        self.runtime_thread.start()
 
     def stop(self):
         self.stop_event.set()
-        self.scheduler_thread.join()
+        self.runtime_thread.join()
         self.worker_interface.stop()
 
         self.monitoring.stop()

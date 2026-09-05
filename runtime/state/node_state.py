@@ -37,7 +37,8 @@ class NodeState:
         self.cpu_percent = None
         self.ram_percent = None
         self.temperature = None
-        self.latency_ms = None
+        
+        self.avg_service_time = None
 
         self.cpu_state = ResourceState.HEALTHY
         self.ram_state = ResourceState.HEALTHY
@@ -53,7 +54,7 @@ class NodeState:
             cpu_percent=None, 
             ram_percent=None, 
             temperature=None, 
-            latency_ms=None,
+            avg_service_time=None,
             queue_size=None,
             unfinished_tasks=None,
         ):
@@ -62,7 +63,7 @@ class NodeState:
             self.cpu_percent = cpu_percent
             self.ram_percent = ram_percent
             self.temperature = temperature
-            self.latency_ms = latency_ms
+            self.avg_service_time = avg_service_time
             self.queue_size = queue_size
             self.unfinished_tasks = unfinished_tasks
 

@@ -5,16 +5,14 @@ import pickle
 import threading
 
 from runtime.monitoring.monitor import Monitoring
-from runtime.scheduler.scheduler_rr import RoundRobinScheduler
 from runtime.worker.worker_interface import WorkerInterface
 from runtime.logging.decision_logger import CSVDecisionLogger
 from runtime.logging.timing_logger import RuntimeTimingLogger
 from runtime.runtime_manager import RuntimeManager
 from runtime.state.cluster_state import ClusterState, NodeState
-from runtime.state.resource_state import ResourceState
-from config import SCHEDULER
+from config import SCHEDULER, MAX_WAIT_SECONDS
 from runtime.scheduler.scheduler_manager import create_scheduler
-from runtime.state.scheduler_types import DecisionReason, AdmissionReason
+from runtime.policy.offload_decision import OffloadDecision
 
 RUNTIME_SOCKET_PATH = "/tmp/adap_runtime.sock"
 OFFLOAD_PORT = 9300
@@ -44,11 +42,13 @@ class RuntimeServer:
         scheduler = create_scheduler(
             SCHEDULER
         )
+        offload_decision = OffloadDecision(max_wait_seconds=MAX_WAIT_SECONDS)
 
         self.runtime_manager = RuntimeManager(
             monitoring=Monitoring(cluster_state),
             scheduler=scheduler,
             worker_interface=WorkerInterface(),
+            offload_decision=offload_decision,
             decision_logger=CSVDecisionLogger(),
             timing_logger=RuntimeTimingLogger(),
         )

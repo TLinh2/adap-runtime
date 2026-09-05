@@ -84,7 +84,6 @@ class ClusterState:
 
             data[f"{prefix}_cpu_percent"] = node.cpu_percent
             data[f"{prefix}_ram_percent"] = node.ram_percent
-            # data[f"{prefix}_latency_ms"] = node.latency_ms
             data[f"{prefix}_temperature"] = node.temperature
 
         return data

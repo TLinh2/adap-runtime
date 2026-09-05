@@ -25,6 +25,11 @@ task_queue = Queue()
 MODEL_PATH = "./onnx/bearing_cnn.onnx"
 WORKER_SOCKET_PATH = "/tmp/adap_worker.sock"
 WORKER_STATUS_SOCKET_PATH = "/tmp/adap_worker_status.sock"
+EMA_ALPHA = 0.1
+avg_service_time = None
+service_time_lock = threading.Lock()
+
+
 print("[Worker] Loading model...")
 
 session = ort.InferenceSession(
@@ -107,10 +112,20 @@ def inference_loop():
         data = task_queue.get()
 
         try:
+            service_started_at = time.perf_counter()
 
-            execute_inference(
-                data
-            )
+            execute_inference(data)
+
+            service_finished_at = time.perf_counter()
+            service_time = (service_finished_at - service_started_at)
+
+            global avg_service_time
+            with service_time_lock:
+                if avg_service_time is None:
+                    avg_service_time = service_time
+
+                else:
+                    avg_service_time = EMA_ALPHA * service_time + (1 - EMA_ALPHA) * avg_service_time
 
         except Exception as e:
 
@@ -264,12 +279,17 @@ def status_socket_listener():
             if (request_data.get("type")!= "STATUS_REQUEST"):
                 continue
 
+            with service_time_lock:
+                current_avg_service_time = avg_service_time
+
             response_data = {
                 "queue_size":
                     task_queue.qsize(),
 
                 "unfinished_tasks":
-                    task_queue.unfinished_tasks
+                    task_queue.unfinished_tasks,
+
+                "avg_service_time": current_avg_service_time
             }
 
             response = json.dumps(

@@ -114,6 +114,7 @@ class Monitoring:
             queue_data = self.get_worker_status()
             queue_size = queue_data["queue_size"]
             unfinished_tasks = queue_data["unfinished_tasks"]
+            avg_service_time = queue_data["avg_service_time"]
         except (
             OSError,
             socket.timeout,
@@ -127,13 +128,15 @@ class Monitoring:
             )
             queue_size = host.queue_size
             unfinished_tasks = host.unfinished_tasks
+            avg_service_time = host.avg_service_time
 
         host.update(
             cpu_percent=cpu_percent,
             ram_percent=ram_percent,
             temperature=temperature,
             queue_size=queue_size,
-            unfinished_tasks=unfinished_tasks
+            unfinished_tasks=unfinished_tasks,
+            avg_service_time=avg_service_time
         )
 
         host.update_health_state()
@@ -161,6 +164,8 @@ class Monitoring:
 
             "queue_size": host.queue_size,
             "unfinished_tasks": host.unfinished_tasks,
+
+            "avg_service_time": host.avg_service_time,
 
             "overall_state": host.overall_state,
             "accept_offload": host.is_available,
@@ -247,7 +252,9 @@ class Monitoring:
             temperature=payload["temperature"],
 
             queue_size=payload["queue_size"],
-            unfinished_tasks=payload["unfinished_tasks"]
+            unfinished_tasks=payload["unfinished_tasks"],
+
+            avg_service_time=payload["avg_service_time"]
         )
         node.update_health_state()
 
